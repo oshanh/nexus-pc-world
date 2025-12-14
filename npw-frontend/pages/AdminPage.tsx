@@ -20,7 +20,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
     const { isAdmin, adminMode, user } = useAuth();
     const { products, addProduct, deleteProduct, updateProduct } = useProducts();
     const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
-    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<string | null>(null);
 
     // Form State
     const [formData, setFormData] = useState<Partial<Product>>({

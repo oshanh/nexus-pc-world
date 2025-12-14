@@ -1,6 +1,6 @@
 
 export interface Product {
-  id: number;
+  id: string;
   name: string;
   category: 'Desktop' | 'Laptop' | 'Accessory';
   subCategory?: 'Normal PC' | 'Middle-End PC' | 'High-End PC' | 'Normal Lap' | 'Middle-End Lap' | 'Gaming Lap' | 'Cpu' | 'Ram' | 'Storage' | 'VGA' | 'Keyboard' | 'Mouse' | 'Headset' | 'Monitors' | 'Mouse Pads' | 'HDMI Cables';
