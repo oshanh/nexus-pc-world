@@ -16,11 +16,37 @@ const SUB_CATEGORIES = [
     'Cpu', 'Ram', 'Storage', 'VGA', 'Keyboard', 'Mouse', 'Headset', 'Monitors', 'Mouse Pads', 'HDMI Cables'
 ];
 
+// Simple toast notification
+const Toast: React.FC<{ message: string; type: 'success' | 'error'; visible: boolean }> = ({ message, type, visible }) => {
+    if (!visible) return null;
+    return (
+        <div className={`fixed top-6 right-6 p-4 rounded-lg font-semibold z-50 shadow-lg animate-in fade-in slide-in-from-top-2 ${
+            type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+        }`}>
+            <div className="flex items-center gap-3">
+                {type === 'success' ? (
+                    <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                ) : (
+                    <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                )}
+                <span>{message}</span>
+            </div>
+        </div>
+    );
+};
+
 const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
     const { isAdmin, adminMode, user } = useAuth();
     const { products, addProduct, deleteProduct, updateProduct } = useProducts();
     const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({ message: '', type: 'success', visible: false });
 
     // Form State
     const [formData, setFormData] = useState<Partial<Product>>({
@@ -35,13 +61,18 @@ const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
         specs: [{ name: '', value: '' }]
     });
 
+    const showToast = (message: string, type: 'success' | 'error') => {
+        setToast({ message, type, visible: true });
+        setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 4000);
+    };
+
     if (!isAdmin || !adminMode) {
         return (
             <section className="py-20 min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-4xl font-exo font-bold text-red-500 mb-4">Access Denied</h1>
                     <p className="text-gray-400 mb-8">You do not have clearance to access the Command Center.</p>
-                    <GamingButton onClick={() => navigateTo('#/')} variant="primary">Return to Base</GamingButton>
+                    <GamingButton onClick={() => navigateTo('/')} variant="primary">Return to Base</GamingButton>
                 </div>
             </section>
         );
@@ -104,12 +135,12 @@ const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
         setFormData(prev => ({ ...prev, imageUrls: newUrls }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         // Basic validation
         if (!formData.name || !formData.price || !formData.description) {
-            alert("Please fill in all required fields.");
+            showToast('Please fill in all required fields.', 'error');
             return;
         }
 
@@ -117,7 +148,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
         const validImageUrls = (formData.imageUrls || []).filter(url => url && url.trim() !== '');
 
         if (validImageUrls.length === 0) {
-            alert("Please provide at least one image URL.");
+            showToast('Please provide at least one image URL.', 'error');
             return;
         }
 
@@ -133,16 +164,39 @@ const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
             specs: formData.specs!.filter(s => s.name && s.value)
         };
 
-        if (editingId) {
-            updateProduct(editingId, productData);
-            alert("Product updated successfully!");
-        } else {
-            addProduct(productData);
-            alert("Product added successfully!");
+        setIsSubmitting(true);
+        try {
+            if (editingId) {
+                await updateProduct(editingId, productData);
+                showToast('Product updated successfully!', 'success');
+            } else {
+                await addProduct(productData);
+                showToast('Product added successfully!', 'success');
+            }
+            
+            resetForm();
+            setActiveTab('list');
+        } catch (err) {
+            showToast(`Failed to ${editingId ? 'update' : 'add'} product. Please try again.`, 'error');
+            console.error(err);
+        } finally {
+            setIsSubmitting(false);
         }
+    };
+
+    const handleDelete = async (id: string, name: string) => {
+        if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
         
-        resetForm();
-        setActiveTab('list');
+        setIsDeleting(id);
+        try {
+            await deleteProduct(id);
+            showToast('Product deleted successfully!', 'success');
+        } catch (err) {
+            showToast('Failed to delete product. Please try again.', 'error');
+            console.error(err);
+        } finally {
+            setIsDeleting(null);
+        }
     };
 
     return (
@@ -219,20 +273,21 @@ const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
                                                         </svg>
                                                     </GamingButton>
                                                     <GamingButton 
-                                                        onClick={() => {
-                                                            if(window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
-                                                                deleteProduct(product.id);
-                                                            }
-                                                        }}
+                                                        onClick={() => handleDelete(product.id, product.name)}
                                                         variant="danger"
                                                         size="sm"
                                                         iconOnly={true}
+                                                        disabled={isDeleting === product.id}
                                                         className="!h-8 !w-8"
                                                         aria-label="Delete"
                                                     >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
+                                                        {isDeleting === product.id ? (
+                                                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                        ) : (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                        )}
                                                     </GamingButton>
                                                 </div>
                                             </td>
@@ -401,11 +456,18 @@ const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
                             </div>
 
                             <div className="pt-4 border-t border-nexus-gray flex gap-4">
-                                <GamingButton type="submit" variant="cta" className="flex-1">
-                                    {editingId ? 'Update Unit' : 'Deploy Unit to Stock'}
+                                <GamingButton type="submit" variant="cta" className="flex-1" disabled={isSubmitting}>
+                                    {isSubmitting ? (
+                                        <span className="flex items-center gap-2">
+                                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                            {editingId ? 'Updating...' : 'Deploying...'}
+                                        </span>
+                                    ) : (
+                                        editingId ? 'Update Unit' : 'Deploy Unit to Stock'
+                                    )}
                                 </GamingButton>
                                 {editingId && (
-                                     <GamingButton type="button" variant="secondary" onClick={() => { resetForm(); setActiveTab('list'); }}>
+                                     <GamingButton type="button" variant="secondary" onClick={() => { resetForm(); setActiveTab('list'); }} disabled={isSubmitting}>
                                         Cancel Update
                                     </GamingButton>
                                 )}
@@ -414,6 +476,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
                     </div>
                 )}
             </div>
+            <Toast message={toast.message} type={toast.type} visible={toast.visible} />
         </section>
     );
 };

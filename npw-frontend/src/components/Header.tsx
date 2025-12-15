@@ -56,7 +56,7 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigateTo }) => {
 
   const handleLogout = () => {
     logout();
-    navigateTo('#/');
+    navigateTo('/');
     setIsProfileOpen(false);
     setIsOpen(false);
   }
@@ -64,7 +64,7 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigateTo }) => {
   return (
     <header className="bg-nexus-gray/80 backdrop-blur-sm sticky top-0 z-50 shadow-lg shadow-nexus-blue/10 flex flex-col">
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-        <a href="#/" onClick={(e) => handleNavClick(e, '#/')} className="text-2xl md:text-3xl font-exo font-bold text-white tracking-widest">
+        <a href="/" onClick={(e) => handleNavClick(e, '/')} className="text-2xl md:text-3xl font-exo font-bold text-white tracking-widest">
           NEXUS PC World
         </a>
         <div className="hidden md:flex items-center flex-grow justify-end gap-6">
@@ -120,7 +120,7 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigateTo }) => {
                       </div>
                   ) : (
                       <GamingButton 
-                        onClick={() => navigateTo('#/login')} 
+                        onClick={() => navigateTo('/login')} 
                         size="sm" 
                         variant="primary"
                         className="ml-2"
@@ -131,10 +131,10 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigateTo }) => {
             </div>
         </div>
         <div className="md:hidden flex items-center gap-4">
-            <a href="#/wishlist" onClick={(e) => handleNavClick(e, '#/wishlist')} className={`text-white ${currentRoute === '#/wishlist' ? 'text-nexus-blue' : 'text-nexus-light'}`} aria-label="View wishlist">
+            <a href="/wishlist" onClick={(e) => handleNavClick(e, '/wishlist')} className={`text-white ${currentRoute === '/wishlist' ? 'text-nexus-blue' : 'text-nexus-light'}`} aria-label="View wishlist">
               <WishlistIconWithBadge/>
             </a>
-            <a href="#/cart" onClick={(e) => handleNavClick(e, '#/cart')} className={`text-white ${currentRoute === '#/cart' ? 'text-nexus-blue' : 'text-nexus-light'}`} aria-label="View shopping cart">
+            <a href="/cart" onClick={(e) => handleNavClick(e, '/cart')} className={`text-white ${currentRoute === '/cart' ? 'text-nexus-blue' : 'text-nexus-light'}`} aria-label="View shopping cart">
               <CartIconWithBadge/>
             </a>
             <GamingButton onClick={() => setIsOpen(!isOpen)} iconOnly={true} size="sm" variant="secondary" aria-label="Open menu">
@@ -174,7 +174,7 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigateTo }) => {
                   </>
               ) : (
                   <div className="p-4 flex justify-center">
-                    <GamingButton onClick={() => { navigateTo('#/login'); setIsOpen(false); }} size="sm" variant="primary" className="w-full">
+                    <GamingButton onClick={() => { navigateTo('/login'); setIsOpen(false); }} size="sm" variant="primary" className="w-full">
                         Login
                     </GamingButton>
                   </div>
@@ -190,7 +190,7 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigateTo }) => {
                  System Admin Active
               </div>
               <button 
-                  onClick={() => navigateTo('#/admin')}
+                  onClick={() => navigateTo('/admin')}
                   className="bg-white text-green-700 hover:bg-gray-100 hover:scale-105 transition-all duration-200 px-3 py-1 rounded-sm font-bold text-xs uppercase tracking-wider shadow-sm"
               >
                   Access Command Center

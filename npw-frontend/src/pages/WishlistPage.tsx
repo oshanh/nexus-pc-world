@@ -16,7 +16,7 @@ const EmptyWishlist: React.FC<{ navigateTo: (path: string) => void; }> = ({ navi
         </svg>
         <h2 className="mt-6 text-2xl font-exo text-nexus-light mb-2">Your Wishlist is Empty</h2>
         <p className="text-gray-400 mb-8">Find gear you love and save it for later by clicking the heart icon.</p>
-        <GamingButton onClick={() => navigateTo('#/products')} variant="cta">
+        <GamingButton onClick={() => navigateTo('/products')} variant="cta">
             Browse Products
         </GamingButton>
     </div>

@@ -2,13 +2,13 @@
 import type { Product } from './types';
 
 export const NAV_LINKS = [
-  { name: 'Home', href: '#/' },
-  { name: 'Products', href: '#/products' },
-  { name: 'Custom Builds', href: '#/custom-build' },
-  { name: 'About', href: '#/about' },
-  { name: 'Contact', href: '#/contact' },
-  { name: 'Wishlist', href: '#/wishlist', icon: 'wishlist' },
-  { name: 'Cart', href: '#/cart', icon: 'cart' },
+  { name: 'Home', href: '/' },
+  { name: 'Products', href: '/products' },
+  { name: 'Custom Builds', href: '/custom-build' },
+  { name: 'About', href: '/about' },
+  { name: 'Contact', href: '/contact' },
+  { name: 'Wishlist', href: '/wishlist', icon: 'wishlist' },
+  { name: 'Cart', href: '/cart', icon: 'cart' },
 ];
 
 export const PROMOTION_IMAGES = [

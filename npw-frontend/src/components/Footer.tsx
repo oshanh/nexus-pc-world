@@ -20,7 +20,7 @@ const Footer: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateTo 
         if (isAdmin) {
             toggleAdminMode();
         } else {
-            navigateTo('#/login');
+            navigateTo('/login');
         }
     };
 
@@ -40,13 +40,13 @@ const Footer: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateTo 
                     <div>
                         <h4 className="font-exo font-bold text-white uppercase tracking-wider mb-4">Quick Links</h4>
                         <ul>
-                            <li><FooterLink href="#/" navigateTo={navigateTo}>Home</FooterLink></li>
-                            <li><FooterLink href="#/products" navigateTo={navigateTo}>Products</FooterLink></li>
-                            <li><FooterLink href="#/custom-build" navigateTo={navigateTo}>Custom Builds</FooterLink></li>
-                            <li><FooterLink href="#/about" navigateTo={navigateTo}>About Us</FooterLink></li>
+                            <li><FooterLink href="/" navigateTo={navigateTo}>Home</FooterLink></li>
+                            <li><FooterLink href="/products" navigateTo={navigateTo}>Products</FooterLink></li>
+                            <li><FooterLink href="/custom-build" navigateTo={navigateTo}>Custom Builds</FooterLink></li>
+                            <li><FooterLink href="/about" navigateTo={navigateTo}>About Us</FooterLink></li>
                             {isAdmin && adminMode && (
                                 <li>
-                                    <FooterLink href="#/admin" navigateTo={navigateTo} className="text-red-400 hover:text-red-500 font-semibold">
+                                    <FooterLink href="/admin" navigateTo={navigateTo} className="text-red-400 hover:text-red-500 font-semibold">
                                         Admin Panel
                                     </FooterLink>
                                 </li>
@@ -58,7 +58,7 @@ const Footer: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateTo 
                     <div>
                         <h4 className="font-exo font-bold text-white uppercase tracking-wider mb-4">Support</h4>
                         <ul>
-                            <li><FooterLink href="#/contact" navigateTo={navigateTo}>Contact Us</FooterLink></li>
+                            <li><FooterLink href="/contact" navigateTo={navigateTo}>Contact Us</FooterLink></li>
                             <li><a href="#" className="text-gray-400 hover:text-nexus-blue transition-colors duration-300 text-sm block mb-2">FAQ</a></li>
                             <li><a href="#" className="text-gray-400 hover:text-nexus-blue transition-colors duration-300 text-sm block mb-2">Warranty Info</a></li>
                             <li><a href="#" className="text-gray-400 hover:text-nexus-blue transition-colors duration-300 text-sm block mb-2">Shipping</a></li>

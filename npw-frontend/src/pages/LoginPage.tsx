@@ -21,7 +21,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigateTo }) => {
 
         try {
             await login(email, password);
-            navigateTo('#/'); // Redirect to home on success
+            navigateTo('/'); // Redirect to home on success
         } catch (err) {
             setError('Failed to sign in. Please check your credentials.');
         } finally {
@@ -102,7 +102,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigateTo }) => {
 
                     <div className="mt-6 text-center text-sm text-gray-400">
                         Don't have an account?{' '}
-                        <button onClick={() => navigateTo('#/signup')} className="text-nexus-blue font-bold hover:text-white transition-colors">
+                        <button onClick={() => navigateTo('/signup')} className="text-nexus-blue font-bold hover:text-white transition-colors">
                             Sign Up
                         </button>
                     </div>

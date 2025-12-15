@@ -162,7 +162,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ onViewDetails, navi
                 </div>
                 
                 <div className="text-center mt-12">
-                     <GamingButton onClick={() => navigateTo('#/products')} variant="secondary">
+                     <GamingButton onClick={() => navigateTo('/products')} variant="secondary">
                         View All Products
                     </GamingButton>
                 </div>

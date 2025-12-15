@@ -32,7 +32,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ navigateTo }) => {
 
         try {
             await signup(name, email, password);
-            navigateTo('#/'); // Redirect to home on success
+            navigateTo('/'); // Redirect to home on success
         } catch (err) {
             setError('Failed to create an account.');
         } finally {
@@ -127,7 +127,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ navigateTo }) => {
 
                     <div className="mt-6 text-center text-sm text-gray-400">
                         Already have an account?{' '}
-                        <button onClick={() => navigateTo('#/login')} className="text-nexus-blue font-bold hover:text-white transition-colors">
+                        <button onClick={() => navigateTo('/login')} className="text-nexus-blue font-bold hover:text-white transition-colors">
                             Sign In
                         </button>
                     </div>

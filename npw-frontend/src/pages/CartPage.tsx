@@ -14,7 +14,7 @@ const EmptyCart: React.FC<{ navigateTo: (path: string) => void }> = ({ navigateT
         </svg>
         <h2 className="mt-6 text-2xl font-exo text-nexus-light mb-2">Your Cart is Empty</h2>
         <p className="text-gray-400 mb-8">Forge your legend by adding some gear to your arsenal.</p>
-        <GamingButton onClick={() => navigateTo('#/products')} variant="cta">
+        <GamingButton onClick={() => navigateTo('/products')} variant="cta">
             Explore Our Arsenal
         </GamingButton>
     </div>
@@ -51,7 +51,7 @@ const OrderConfirmation: React.FC<{ order: ConfirmedOrder; navigateTo: (path: st
             </div>
         </div>
 
-        <GamingButton onClick={() => navigateTo('#/products')} variant="cta">
+        <GamingButton onClick={() => navigateTo('/products')} variant="cta">
             Continue Shopping
         </GamingButton>
     </div>

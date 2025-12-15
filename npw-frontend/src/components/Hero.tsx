@@ -74,7 +74,7 @@ const Hero: React.FC<HeroProps> = ({ navigateTo }) => {
               Your ultimate gaming experience starts here.
           </p>
           <div className="mt-8">
-            <GamingButton onClick={() => navigateTo('#/custom-build')} variant="primary">
+            <GamingButton onClick={() => navigateTo('/custom-build')} variant="primary">
                 Build Your Dream Rig
             </GamingButton>
           </div>

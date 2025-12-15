@@ -41,22 +41,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [adminMode, setAdminMode] = useState(false);
 
   useEffect(() => {
-    // On mount try to load current user from token
+    // On mount try to load current user from the session cookie
     const loadUser = async () => {
-      const token = localStorage.getItem('nexusToken');
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
+      setIsLoading(true);
       try {
         const res: MeResponse = await authService.me();
         const backendUser = res.user;
         const appUser: User = { id: backendUser.id, name: backendUser.username, email: backendUser.email, role: backendUser.role };
         setUser(appUser);
+        setAdminMode(appUser.role === 'admin');
         localStorage.setItem('nexusUser', JSON.stringify(appUser));
       } catch (err) {
-        console.error('Failed to load user from token', err);
-        localStorage.removeItem('nexusToken');
+        console.warn('No active session found', err);
+        setUser(null);
+        setAdminMode(false);
         localStorage.removeItem('nexusUser');
       } finally {
         setIsLoading(false);
