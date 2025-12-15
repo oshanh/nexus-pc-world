@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useProducts } from '../../contexts/ProductContext';
 import GamingButton from '../../components/GamingButton';
 import Toast from '../../components/Toast';
+import AccessDenied from '../../components/AccessDenied';
 import type { Product } from '../../types';
 
 interface AdminPageProps {
@@ -48,13 +49,12 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
 
     if (!isAdmin || !adminMode) {
         return (
-            <section className="py-20 min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-4xl font-exo font-bold text-red-500 mb-4">Access Denied</h1>
-                    <p className="text-gray-400 mb-8">You do not have clearance to access the Command Center.</p>
-                    <GamingButton onClick={() => navigateTo('/')} variant="primary">Return to Base</GamingButton>
-                </div>
-            </section>
+            <AccessDenied
+                title="Access Denied"
+                description="You do not have clearance to access the Command Center."
+                backText="Return to Base"
+                onBack={() => navigateTo('/')} 
+            />
         );
     }
 

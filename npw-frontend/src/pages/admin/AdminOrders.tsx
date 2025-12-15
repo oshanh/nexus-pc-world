@@ -1,17 +1,20 @@
 import React from 'react';
 import GamingButton from '../../components/GamingButton';
 import { useAuth } from '../../contexts/AuthContext';
+import AccessDenied from '../../components/AccessDenied';
+import { useNavigate } from 'react-router-dom';
 
 const AdminOrders: React.FC = () => {
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   if (!isAdmin) {
     return (
-      <section className="py-20 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-3xl font-exo font-bold text-red-500 mb-4">Access Denied</h1>
-          <p className="text-gray-400">You do not have permission to view this page.</p>
-        </div>
-      </section>
+      <AccessDenied
+        title="Access Denied"
+        description="You do not have permission to view this page."
+        backText="Return to Home"
+        onBack={() => navigate('/')}
+      />
     );
   }
 
