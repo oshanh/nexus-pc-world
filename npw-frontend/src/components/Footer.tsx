@@ -34,6 +34,12 @@ const Footer: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateTo 
                         <ul>
                             <li><FooterLink href="/" navigateTo={navigateTo}>Home</FooterLink></li>
                             <li><FooterLink href="/products" navigateTo={navigateTo}>Products</FooterLink></li>
+                            {!isAdmin && (
+                                <>
+                                    <li><FooterLink href="/cart" navigateTo={navigateTo}>Cart</FooterLink></li>
+                                    <li><FooterLink href="/wishlist" navigateTo={navigateTo}>Wishlist</FooterLink></li>
+                                </>
+                            )}
                             <li><FooterLink href="/custom-build" navigateTo={navigateTo}>Custom Builds</FooterLink></li>
                             <li><FooterLink href="/about" navigateTo={navigateTo}>About Us</FooterLink></li>
                             {isAdmin && (

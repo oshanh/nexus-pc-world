@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
+import { useAuth } from '../contexts/AuthContext';
 import GamingButton from './GamingButton';
 
 interface ProductModalProps {
@@ -14,6 +15,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
   const [activeImage, setActiveImage] = useState(product.imageUrls[0]);
   const { addToCart } = useCart();
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const { isAdmin } = useAuth();
 
   const isWishlisted = isInWishlist(product.id);
 
@@ -108,31 +110,37 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
         <div className="p-4 bg-nexus-dark/50 border-t border-nexus-purple/20 flex justify-between items-center flex-shrink-0">
             <span className="text-3xl font-bold text-nexus-blue">{product.price}</span>
             <div className="flex items-center gap-2">
+              {!isAdmin ? (
+                <>
                 <GamingButton
-                    onClick={handleWishlistToggle}
-                    variant="secondary"
-                    iconOnly={true}
-                    size="md"
-                    aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                  onClick={handleWishlistToggle}
+                  variant="secondary"
+                  iconOnly={true}
+                  size="md"
+                  aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
                 >
-                    {isWishlisted ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                           <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                        </svg>
-                    ) : (
-                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                    )}
+                  {isWishlisted ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                       <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                  )}
                 </GamingButton>
                 <GamingButton 
-                    onClick={handleAddToCart}
-                    variant="primary"
-                    disabled={addedToCart}
-                    className={addedToCart ? '!bg-green-500 !text-white !border-green-500' : ''}
+                  onClick={handleAddToCart}
+                  variant="primary"
+                  disabled={addedToCart}
+                  className={addedToCart ? '!bg-green-500 !text-white !border-green-500' : ''}
                 >
-                    {addedToCart ? 'Added!' : 'Add to Cart'}
+                  {addedToCart ? 'Added!' : 'Add to Cart'}
                 </GamingButton>
+                </>
+              ) : (
+                <div className="text-sm text-gray-400 italic">Admin view — actions disabled</div>
+              )}
             </div>
         </div>
       </div>

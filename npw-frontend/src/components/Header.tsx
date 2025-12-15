@@ -83,7 +83,7 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigateTo }) => {
                 ))}
             </div>
             <div className="flex items-center space-x-6">
-                 {NAV_LINKS.filter(link => link.icon).map((link) => (
+                 {NAV_LINKS.filter(link => link.icon && !isAdmin).map((link) => (
                     <a
                       key={link.name}
                       href={link.href}
@@ -131,12 +131,16 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigateTo }) => {
             </div>
         </div>
         <div className="md:hidden flex items-center gap-4">
-            <a href="/wishlist" onClick={(e) => handleNavClick(e, '/wishlist')} className={`text-white ${currentRoute === '/wishlist' ? 'text-nexus-blue' : 'text-nexus-light'}`} aria-label="View wishlist">
-              <WishlistIconWithBadge/>
-            </a>
-            <a href="/cart" onClick={(e) => handleNavClick(e, '/cart')} className={`text-white ${currentRoute === '/cart' ? 'text-nexus-blue' : 'text-nexus-light'}`} aria-label="View shopping cart">
-              <CartIconWithBadge/>
-            </a>
+            {!isAdmin && (
+              <>
+                <a href="/wishlist" onClick={(e) => handleNavClick(e, '/wishlist')} className={`text-white ${currentRoute === '/wishlist' ? 'text-nexus-blue' : 'text-nexus-light'}`} aria-label="View wishlist">
+                  <WishlistIconWithBadge/>
+                </a>
+                <a href="/cart" onClick={(e) => handleNavClick(e, '/cart')} className={`text-white ${currentRoute === '/cart' ? 'text-nexus-blue' : 'text-nexus-light'}`} aria-label="View shopping cart">
+                  <CartIconWithBadge/>
+                </a>
+              </>
+            )}
             <GamingButton onClick={() => setIsOpen(!isOpen)} iconOnly={true} size="sm" variant="secondary" aria-label="Open menu">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16m-7 6h7"}></path>
