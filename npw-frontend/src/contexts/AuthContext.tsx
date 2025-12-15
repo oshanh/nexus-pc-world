@@ -30,7 +30,6 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   adminMode: boolean;
-  toggleAdminMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -109,12 +108,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('nexusUser');
   };
 
-  const toggleAdminMode = () => {
-      if (user?.role === 'admin') {
-          setAdminMode(prev => !prev);
-      }
-  };
-
   const value = useMemo(() => ({
     user,
     isAuthenticated: !!user,
@@ -124,7 +117,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signup,
     logout,
     isLoading,
-    toggleAdminMode
   }), [user, isLoading, adminMode]);
 
   return (

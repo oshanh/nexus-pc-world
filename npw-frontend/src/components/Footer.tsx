@@ -14,15 +14,7 @@ const FooterLink: React.FC<{ href: string; children: React.ReactNode; navigateTo
 );
 
 const Footer: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateTo }) => {
-    const { isAdmin, adminMode, toggleAdminMode } = useAuth();
-
-    const handleAdminToggle = () => {
-        if (isAdmin) {
-            toggleAdminMode();
-        } else {
-            navigateTo('/login');
-        }
-    };
+    const { isAdmin } = useAuth();
 
     return (
         <footer className="bg-nexus-dark border-t-2 border-nexus-blue/30 mt-auto">
@@ -44,7 +36,7 @@ const Footer: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateTo 
                             <li><FooterLink href="/products" navigateTo={navigateTo}>Products</FooterLink></li>
                             <li><FooterLink href="/custom-build" navigateTo={navigateTo}>Custom Builds</FooterLink></li>
                             <li><FooterLink href="/about" navigateTo={navigateTo}>About Us</FooterLink></li>
-                            {isAdmin && adminMode && (
+                            {isAdmin && (
                                 <li>
                                     <FooterLink href="/admin" navigateTo={navigateTo} className="text-red-400 hover:text-red-500 font-semibold">
                                         Admin Panel
@@ -86,19 +78,6 @@ const Footer: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateTo 
                 <div className="mt-12 pt-8 border-t border-nexus-blue/20 flex flex-col md:flex-row justify-between items-center">
                     <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 mb-4 md:mb-0">
                         <p className="text-gray-500 text-sm">&copy; {new Date().getFullYear()} Nexus Gaming PC. All Rights Reserved.</p>
-                        
-                        {/* Admin Toggle */}
-                        <div className="flex items-center gap-3 bg-nexus-gray/30 px-3 py-1.5 rounded-full border border-gray-700/50">
-                            <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Admin Mode</span>
-                            <button
-                                onClick={handleAdminToggle}
-                                className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-300 focus:outline-none ${adminMode ? 'bg-nexus-blue' : 'bg-gray-700'}`}
-                                aria-label="Toggle Admin Mode"
-                                title={isAdmin ? "Toggle Admin View" : "Login as Admin"}
-                            >
-                                <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300 ${adminMode ? 'translate-x-5' : 'translate-x-0'}`} />
-                            </button>
-                        </div>
                     </div>
 
                     <div className="flex space-x-6">
