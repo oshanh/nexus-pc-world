@@ -1,28 +1,25 @@
 
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import ProductModal from './components/ProductModal';
-import { CartProvider } from './contexts/CartContext';
-import { WishlistProvider } from './contexts/WishlistContext';
-import { AuthProvider } from './contexts/AuthContext';
-import { ProductProvider } from './contexts/ProductContext';
+import Header from './src/components/Header';
+import Footer from './src/components/Footer';
+import ProductModal from './src/components/ProductModal';
+import { CartProvider } from './src/contexts/CartContext';
+import { WishlistProvider } from './src/contexts/WishlistContext';
+import { AuthProvider } from './src/contexts/AuthContext';
+import { ProductProvider } from './src/contexts/ProductContext';
 import type { Product } from './types';
-import HomePage from './pages/HomePage';
-import ProductsPage from './pages/ProductsPage';
-import CustomBuildPage from './pages/CustomBuildPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
-import CartPage from './pages/CartPage';
-import WishlistPage from './pages/WishlistPage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminOrders from './pages/admin/AdminOrders';
-import GamingButton from './components/GamingButton';
+import HomePage from './src/pages/HomePage';
+import ProductsPage from './src/pages/ProductsPage';
+import CustomBuildPage from './src/pages/CustomBuildPage';
+import AboutPage from './src/pages/AboutPage';
+import ContactPage from './src/pages/ContactPage';
+import CartPage from './src/pages/CartPage';
+import WishlistPage from './src/pages/WishlistPage';
+import LoginPage from './src/pages/LoginPage';
+import SignupPage from './src/pages/SignupPage';
+import AdminPage from './src/pages/admin/AdminProducts';
+import GamingButton from './src/components/GamingButton';
 
 const NotFound: React.FC = () => (
   <section className="py-20 min-h-screen flex items-center justify-center">
@@ -83,10 +80,7 @@ const App: React.FC = () => {
                   <Route path="/cart" element={<CartPage navigateTo={navigateTo} />} />
                   <Route path="/login" element={<LoginPage navigateTo={navigateTo} />} />
                   <Route path="/signup" element={<SignupPage navigateTo={navigateTo} />} />
-                  <Route path="/admin" element={<AdminDashboard navigateTo={navigateTo} />} />
-                  <Route path="/admin/products" element={<AdminProducts navigateTo={navigateTo} />} />
-                  <Route path="/admin/users" element={<AdminUsers />} />
-                  <Route path="/admin/orders" element={<AdminOrders />} />
+                  <Route path="/admin" element={<AdminPage navigateTo={navigateTo} />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>

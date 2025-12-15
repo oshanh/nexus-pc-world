@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useProducts } from '../contexts/ProductContext';
-import GamingButton from '../components/GamingButton';
-import type { Product } from '../types';
+import { useAuth } from '../../contexts/AuthContext';
+import { useProducts } from '../../contexts/ProductContext';
+import GamingButton from '../../components/GamingButton';
+import Toast from '../../components/Toast';
+import type { Product } from '../../types';
 
 interface AdminPageProps {
     navigateTo: (path: string) => void;
@@ -16,30 +17,9 @@ const SUB_CATEGORIES = [
     'Cpu', 'Ram', 'Storage', 'VGA', 'Keyboard', 'Mouse', 'Headset', 'Monitors', 'Mouse Pads', 'HDMI Cables'
 ];
 
-// Simple toast notification
-const Toast: React.FC<{ message: string; type: 'success' | 'error'; visible: boolean }> = ({ message, type, visible }) => {
-    if (!visible) return null;
-    return (
-        <div className={`fixed top-6 right-6 p-4 rounded-lg font-semibold z-50 shadow-lg animate-in fade-in slide-in-from-top-2 ${
-            type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-        }`}>
-            <div className="flex items-center gap-3">
-                {type === 'success' ? (
-                    <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                ) : (
-                    <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                )}
-                <span>{message}</span>
-            </div>
-        </div>
-    );
-};
+// using reusable Toast component in components/Toast.tsx
 
-const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
+const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
     const { isAdmin, adminMode, user } = useAuth();
     const { products, addProduct, deleteProduct, updateProduct } = useProducts();
     const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
@@ -229,6 +209,12 @@ const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
                         >
                             {editingId ? 'EDIT UNIT' : 'NEW UNIT'}
                         </button>
+                    </div>
+                    <div className="flex items-center gap-3 ml-4 mt-4 md:mt-0">
+                        <GamingButton onClick={() => navigateTo('/admin')} variant="primary" size="sm">Dashboard</GamingButton>
+                        <GamingButton onClick={() => navigateTo('/admin/products')} variant="secondary" size="sm">Product CRUD</GamingButton>
+                        <GamingButton onClick={() => navigateTo('/admin/users')} variant="secondary" size="sm">Users CRUD</GamingButton>
+                        <GamingButton onClick={() => navigateTo('/admin/orders')} variant="secondary" size="sm">Orders CRUD</GamingButton>
                     </div>
                 </div>
 
@@ -481,4 +467,4 @@ const AdminPage: React.FC<AdminPageProps> = ({ navigateTo }) => {
     );
 };
 
-export default AdminPage;
+export default AdminProducts;

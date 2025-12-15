@@ -193,8 +193,8 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigateTo }) => {
                  <span className="w-2 h-2 bg-white rounded-full"></span>
                  System Admin Active
               </div>
-              <button 
-                  onClick={() => navigateTo('/admin')}
+                  <button 
+                    onClick={() => navigateTo('/admin')}
                   className="bg-white text-green-700 hover:bg-gray-100 hover:scale-105 transition-all duration-200 px-3 py-1 rounded-sm font-bold text-xs uppercase tracking-wider shadow-sm"
               >
                   Access Command Center

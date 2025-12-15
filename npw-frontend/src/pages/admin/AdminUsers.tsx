@@ -1,0 +1,32 @@
+import React from 'react';
+import GamingButton from '../../components/GamingButton';
+import { useAuth } from '../../contexts/AuthContext';
+
+const AdminUsers: React.FC = () => {
+  const { isAdmin } = useAuth();
+  if (!isAdmin) {
+    return (
+      <section className="py-20 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-exo font-bold text-red-500 mb-4">Access Denied</h1>
+          <p className="text-gray-400">You do not have permission to view this page.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="py-16 min-h-screen">
+      <div className="container mx-auto px-6">
+        <h1 className="text-3xl font-exo font-bold text-white mb-6">Users Management (Placeholder)</h1>
+        <p className="text-gray-400 mb-6">This page will host user CRUD and search tools.</p>
+        <div className="space-x-4">
+          <GamingButton variant="primary">Create User</GamingButton>
+          <GamingButton variant="secondary">Search Users</GamingButton>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default AdminUsers;
