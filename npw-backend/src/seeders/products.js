@@ -236,11 +236,17 @@ const seedDB = async () => {
   try {
     await connectDB();
 
-    await Product.deleteMany({});
-    console.log('Cleared existing products');
+    // Upsert products: do not delete existing products; avoid duplicates by product name
+    const ops = products.map(p => ({
+      updateOne: {
+        filter: { name: p.name },
+        update: { $setOnInsert: p },
+        upsert: true
+      }
+    }));
 
-    await Product.insertMany(products);
-    console.log('Seeded products');
+    const result = await Product.bulkWrite(ops);
+    console.log(`Products upsert result: inserted ${result.upsertedCount || 0}, modified ${result.modifiedCount || 0}, matched ${result.matchedCount || 0}`);
 
     process.exit(0);
   } catch (err) {
