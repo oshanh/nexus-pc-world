@@ -1,7 +1,11 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const connectDB = require('./config/mongodb');
+const productRoutes = require('./routes/productRoutes');
+const authRoutes = require('./routes/authRoutes');
+const csrfProtection = require('./middleware/csrfMiddleware');
 
 dotenv.config();
 
@@ -12,13 +16,20 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cookieParser());
 app.use(express.json());
 
-const productRoutes = require('./routes/productRoutes');
+
 
 // Routes
 app.use('/api/products', productRoutes);
+app.use('/api/auth', authRoutes);
+
+// CSRF token endpoint (clients fetch this to get a valid token/cookie)
+app.get('/api/csrf-token', csrfProtection, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
 app.get('/', (req, res) => {
   res.send('Nexus PC World API is running');
 });

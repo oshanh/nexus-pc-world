@@ -1,11 +1,24 @@
 
 import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
+import { authService } from '../services/authService';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: 'admin' | 'user';
+}
+
+// Backend API response types
+interface BackendUser {
+  id: string;
+  username: string;
+  email: string;
+  role: 'admin' | 'user';
+}
+
+interface MeResponse {
+  user: BackendUser;
 }
 
 interface AuthContextType {
@@ -28,62 +41,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [adminMode, setAdminMode] = useState(false);
 
   useEffect(() => {
-    // Check localStorage for persisted user on mount
-    const storedUser = localStorage.getItem('nexusUser');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      // Optional: Remember admin mode state or default to false for security
-      // setAdminMode(parsedUser.role === 'admin'); 
-    }
-    setIsLoading(false);
+    // On mount try to load current user from token
+    const loadUser = async () => {
+      const token = localStorage.getItem('nexusToken');
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const res: MeResponse = await authService.me();
+        const backendUser = res.user;
+        const appUser: User = { id: backendUser.id, name: backendUser.username, email: backendUser.email, role: backendUser.role };
+        setUser(appUser);
+        localStorage.setItem('nexusUser', JSON.stringify(appUser));
+      } catch (err) {
+        console.error('Failed to load user from token', err);
+        localStorage.removeItem('nexusToken');
+        localStorage.removeItem('nexusUser');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadUser();
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    let role: 'admin' | 'user' = 'user';
-    // Hardcoded admin credentials for demo purposes
-    if (email === 'admin@nexus.com' && password === 'admin123') {
-        role = 'admin';
+    try {
+      // The server sets an httpOnly cookie for authentication; call login then get /me
+      await authService.login(email, password);
+      const res: MeResponse = await authService.me();
+      const backendUser = res.user;
+      const appUser: User = { id: backendUser.id, name: backendUser.username, email: backendUser.email, role: backendUser.role };
+      localStorage.setItem('nexusUser', JSON.stringify(appUser));
+      setUser(appUser);
+      if (appUser.role === 'admin') setAdminMode(true);
+    } catch (err) {
+      console.error('Login error', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
-
-    const mockUser: User = {
-      id: role === 'admin' ? 'admin-001' : 'user-' + Date.now(),
-      name: role === 'admin' ? 'Nexus Commander' : email.split('@')[0],
-      email: email,
-      role: role,
-    };
-    
-    setUser(mockUser);
-    if (role === 'admin') {
-        setAdminMode(true);
-    }
-    localStorage.setItem('nexusUser', JSON.stringify(mockUser));
-    setIsLoading(false);
   };
 
   const signup = async (name: string, email: string, password: string) => {
     setIsLoading(true);
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const newUser: User = {
-      id: Date.now().toString(),
-      name,
-      email,
-      role: 'user', // Default signups are users
-    };
-
-    setUser(newUser);
-    setAdminMode(false);
-    localStorage.setItem('nexusUser', JSON.stringify(newUser));
-    setIsLoading(false);
+    try {
+      // Server sets httpOnly cookie on signup; after signup fetch /me
+      await authService.signup(name, email, password);
+      const res: MeResponse = await authService.me();
+      const backendUser = res.user;
+      const appUser: User = { id: backendUser.id, name: backendUser.username, email: backendUser.email, role: backendUser.role };
+      localStorage.setItem('nexusUser', JSON.stringify(appUser));
+      setUser(appUser);
+      setAdminMode(false);
+    } catch (err) {
+      console.error('Signup error', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
+    // Call server to clear the httpOnly cookie, and clear front-end state
+    authService.logout().catch(err => console.warn('Logout request failed', err));
     setUser(null);
     setAdminMode(false);
     localStorage.removeItem('nexusUser');

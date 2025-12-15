@@ -7,8 +7,10 @@ const {
   updateProduct,
   deleteProduct
 } = require('../controllers/productController');
+const { verifyToken, requireAdmin } = require('../middleware/authMiddleware');
+const csrfProtection = require('../middleware/csrfMiddleware');
 
-router.route('/').get(getProducts).post(createProduct);
-router.route('/:id').get(getProductById).put(updateProduct).delete(deleteProduct);
+router.route('/').get(getProducts).post(csrfProtection, verifyToken, requireAdmin, createProduct);
+router.route('/:id').get(getProductById).put(csrfProtection, verifyToken, requireAdmin, updateProduct).delete(csrfProtection, verifyToken, requireAdmin, deleteProduct);
 
 module.exports = router;
