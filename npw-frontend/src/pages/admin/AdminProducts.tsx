@@ -5,6 +5,7 @@ import { useProducts } from '../../contexts/ProductContext';
 import GamingButton from '../../components/GamingButton';
 import Toast from '../../components/Toast';
 import AccessDenied from '../../components/AccessDenied';
+import AdminLayout from '../../components/AdminLayout';
 import type { Product } from '../../types';
 
 interface AdminPageProps {
@@ -180,13 +181,13 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
     };
 
     return (
-        <section className="py-20 min-h-screen">
-            <div className="container mx-auto px-6">
-                <div className="flex flex-col md:flex-row justify-between items-center mb-12">
-                    <div>
-                        <h1 className="text-4xl font-exo font-bold text-white mb-2">Command Center</h1>
-                        <p className="text-nexus-blue font-mono">Operator: {user?.name} | Clearance: ADMIN</p>
-                    </div>
+        <AdminLayout title="Command Center">
+            <section className="py-0">
+                <div className="container mx-auto px-6">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-12">
+                        <div>
+                            <p className="text-nexus-blue font-mono">Operator: {user?.name} | Clearance: ADMIN</p>
+                        </div>
                     {/* New Styled Tab Switcher */}
                     <div className="flex bg-nexus-dark/80 p-1.5 rounded-full border border-nexus-blue/30 mt-4 md:mt-0 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
                         <button 
@@ -210,12 +211,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                             {editingId ? 'EDIT UNIT' : 'NEW UNIT'}
                         </button>
                     </div>
-                    <div className="flex items-center gap-3 ml-4 mt-4 md:mt-0">
-                        <GamingButton onClick={() => navigateTo('/admin')} variant="primary" size="sm">Dashboard</GamingButton>
-                        <GamingButton onClick={() => navigateTo('/admin/products')} variant="secondary" size="sm">Product CRUD</GamingButton>
-                        <GamingButton onClick={() => navigateTo('/admin/users')} variant="secondary" size="sm">Users CRUD</GamingButton>
-                        <GamingButton onClick={() => navigateTo('/admin/orders')} variant="secondary" size="sm">Orders CRUD</GamingButton>
-                    </div>
+                    
                 </div>
 
                 {activeTab === 'list' ? (
@@ -461,9 +457,10 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                         </form>
                     </div>
                 )}
-            </div>
-            <Toast message={toast.message} type={toast.type} visible={toast.visible} />
-        </section>
+                </div>
+                <Toast message={toast.message} type={toast.type} visible={toast.visible} />
+            </section>
+        </AdminLayout>
     );
 };
 
