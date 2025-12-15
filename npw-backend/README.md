@@ -35,7 +35,13 @@ npm start
 You can create a default admin user (email: `admin@nexus.com`, password: `admin123`) for development with:
 
 ```bash
-npm run seed-admin
+npm run seed:admin
+```
+
+You can also seed all demo data (products + admin) with:
+
+```bash
+npm run seed:all
 ```
 
 ### Cookie-based auth notes

@@ -1,6 +1,7 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import type { Product } from '../types';
+import { productService } from '../services/productService';
 
 interface ProductContextType {
   products: Product[];
@@ -18,13 +19,9 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = 'http://localhost:5000/api/products';
-
   const fetchProducts = async () => {
     try {
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error('Failed to fetch products');
-      const data = await response.json();
+      const data = await productService.getAll();
       setProducts(data);
       setError(null);
     } catch (err) {
@@ -41,13 +38,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addProduct = async (newProductData: Omit<Product, 'id'>) => {
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newProductData),
-      });
-      if (!response.ok) throw new Error('Failed to add product');
-      const newProduct = await response.json();
+      const newProduct = await productService.create(newProductData);
       setProducts(prev => [...prev, newProduct]);
     } catch (err) {
       console.error(err);
@@ -57,10 +48,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteProduct = async (id: string) => {
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete product');
+      await productService.delete(id);
       setProducts(prev => prev.filter(p => p.id !== id));
     } catch (err) {
       console.error(err);
@@ -70,13 +58,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateProduct = async (id: string, updatedProduct: Partial<Product>) => {
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedProduct),
-      });
-      if (!response.ok) throw new Error('Failed to update product');
-      const data = await response.json();
+      const data = await productService.update(id, updatedProduct);
       setProducts(prev => prev.map(p => p.id === id ? data : p));
     } catch (err) {
       console.error(err);
