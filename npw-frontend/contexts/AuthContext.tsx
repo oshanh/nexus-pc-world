@@ -9,6 +9,18 @@ export interface User {
   role: 'admin' | 'user';
 }
 
+// Backend API response types
+interface BackendUser {
+  id: string;
+  username: string;
+  email: string;
+  role: 'admin' | 'user';
+}
+
+interface MeResponse {
+  user: BackendUser;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -37,9 +49,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       try {
-        const res: any = await authService.me();
+        const res: MeResponse = await authService.me();
         const backendUser = res.user;
-        const appUser = { id: backendUser.id, name: backendUser.username, email: backendUser.email, role: backendUser.role };
+        const appUser: User = { id: backendUser.id, name: backendUser.username, email: backendUser.email, role: backendUser.role };
         setUser(appUser);
         localStorage.setItem('nexusUser', JSON.stringify(appUser));
       } catch (err) {
@@ -58,9 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // The server sets an httpOnly cookie for authentication; call login then get /me
       await authService.login(email, password);
-      const res: any = await authService.me();
+      const res: MeResponse = await authService.me();
       const backendUser = res.user;
-      const appUser = { id: backendUser.id, name: backendUser.username, email: backendUser.email, role: backendUser.role };
+      const appUser: User = { id: backendUser.id, name: backendUser.username, email: backendUser.email, role: backendUser.role };
       localStorage.setItem('nexusUser', JSON.stringify(appUser));
       setUser(appUser);
       if (appUser.role === 'admin') setAdminMode(true);
@@ -77,9 +89,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Server sets httpOnly cookie on signup; after signup fetch /me
       await authService.signup(name, email, password);
-      const res: any = await authService.me();
+      const res: MeResponse = await authService.me();
       const backendUser = res.user;
-      const appUser = { id: backendUser.id, name: backendUser.username, email: backendUser.email, role: backendUser.role };
+      const appUser: User = { id: backendUser.id, name: backendUser.username, email: backendUser.email, role: backendUser.role };
       localStorage.setItem('nexusUser', JSON.stringify(appUser));
       setUser(appUser);
       setAdminMode(false);
