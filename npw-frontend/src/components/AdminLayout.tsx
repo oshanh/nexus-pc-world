@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import GamingButton from './GamingButton';
+import Icon from './Icon';
 
-const NavItem: React.FC<{ to: string; label: string; collapsed: boolean; active?: boolean }> = ({ to, label, collapsed, active }) => {
+const NavItem: React.FC<{ to: string; label: string; collapsed: boolean; active?: boolean; icon?: import('./Icon').IconName }> = ({ to, label, collapsed, active, icon }) => {
   const navigate = useNavigate();
 
   return (
@@ -11,13 +12,16 @@ const NavItem: React.FC<{ to: string; label: string; collapsed: boolean; active?
         onClick={() => navigate(to)}
         variant={active ? 'primary' : 'secondary'}
         size="sm"
-        className={`w-full text-left flex items-center gap-3 px-2 ${collapsed ? 'justify-center' : ''}`}
+        className={`w-full text-left flex items-center gap-3 px-2 overflow-hidden ${collapsed ? 'justify-center' : ''}`}
+        aria-label={label}
         aria-current={active ? 'page' : undefined}
       >
         <span className={`w-6 h-6 flex items-center justify-center text-sm ${collapsed ? '' : ''}`}>
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="3" /></svg>
+          <Icon name={icon || 'dot'} className="w-4 h-4" aria-hidden />
         </span>
-        {!collapsed && <span className="truncate">{label}</span>}
+        <span className={`truncate transition-all duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[140px]'}`} aria-hidden={collapsed}>
+          {label}
+        </span>
       </GamingButton>
     </div>
   );
@@ -60,6 +64,7 @@ const AdminLayout: React.FC<{ title?: string; children: React.ReactNode }> = ({ 
       >
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} mb-6`}>
           <div className={`text-white font-exo font-bold text-lg ${collapsed ? 'hidden' : 'block'}`}>
+            <Icon name="dashboard" className="h-5 w-5 inline-block mr-2" aria-hidden />
             Command Center
           </div>
           <button
@@ -68,24 +73,17 @@ const AdminLayout: React.FC<{ title?: string; children: React.ReactNode }> = ({ 
             onClick={toggleCollapsed}
             className="p-1 rounded-md text-gray-300 hover:bg-nexus-gray/20 transform transition-transform duration-150 active:scale-95"
           >
-            {collapsed ? (
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16"/></svg>
-            ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6h12v12"/></svg>
-            )}
+            {collapsed ? <Icon name="expand" className="w-5 h-5" aria-hidden /> : <Icon name="collapse" className="w-5 h-5" aria-hidden />}
           </button>
         </div>
 
         <nav className="space-y-2">
-          <NavItem to="/admin" label="Dashboard" collapsed={collapsed} active={location.pathname === '/admin'} />
-          <NavItem to="/admin/products" label="Products" collapsed={collapsed} active={location.pathname.startsWith('/admin/products')} />
-          <NavItem to="/admin/users" label="Users" collapsed={collapsed} active={location.pathname.startsWith('/admin/users')} />
-          <NavItem to="/admin/orders" label="Orders" collapsed={collapsed} active={location.pathname.startsWith('/admin/orders')} />
+          <NavItem to="/admin" label="Dashboard" icon="dashboard" collapsed={collapsed} active={location.pathname === '/admin'} />
+          <NavItem to="/admin/products" label="Products" icon="products" collapsed={collapsed} active={location.pathname.startsWith('/admin/products')} />
+          <NavItem to="/admin/users" label="Users" icon="users" collapsed={collapsed} active={location.pathname.startsWith('/admin/users')} />
+          <NavItem to="/admin/orders" label="Orders" icon="orders" collapsed={collapsed} active={location.pathname.startsWith('/admin/orders')} />
         </nav>
 
-        {/* <div className={`mt-auto pt-6 ${collapsed ? 'text-center' : ''}`}>
-          <small className={`text-gray-500 text-xs ${collapsed ? 'hidden' : 'block'}`}>Admin tools powered by Nexus</small>
-        </div> */}
       </aside>
 
       <main className="flex-1 p-8">

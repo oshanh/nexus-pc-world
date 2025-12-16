@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-interface GamingButtonProps {
+interface GamingButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   onClick?: (e: React.MouseEvent) => void;
   children: React.ReactNode;
   variant?: 'primary' | 'secondary' | 'cta' | 'success' | 'danger';
@@ -15,19 +15,21 @@ interface GamingButtonProps {
   shape?: 'skewed' | 'circular';
 }
 
-const GamingButton: React.FC<GamingButtonProps> = ({
-  onClick,
-  children,
-  variant = 'secondary',
-  size = 'md',
-  className = '',
-  disabled = false,
-  type = 'button',
-  as = 'button',
-  href,
-  iconOnly = false,
-  shape = 'skewed',
-}) => {
+const GamingButton: React.FC<GamingButtonProps> = (props) => {
+  const {
+    onClick,
+    children,
+    variant = 'secondary',
+    size = 'md',
+    className = '',
+    disabled = false,
+    type = 'button',
+    as = 'button',
+    href,
+    iconOnly = false,
+    shape = 'skewed',
+    ...rest
+  } = props;
   // Keep original circular button style as it's distinct and works well for its purpose.
   if (shape === 'circular') {
     const baseStyles = 'relative inline-flex items-center justify-center font-exo uppercase tracking-wider font-bold transition-all duration-300 ease-in-out focus:outline-none focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-[0_0_15px_#ef4444] rounded-full';
@@ -51,14 +53,15 @@ const GamingButton: React.FC<GamingButtonProps> = ({
 
     if (as === 'a') {
         return (
-            <a href={href} onClick={onClick} className={finalClassName}>
+            <a href={href} onClick={onClick} className={finalClassName} {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
                 {content}
             </a>
         )
     }
 
+    // Forward any extra button props (aria-*, id, etc.) via rest
     return (
-      <button onClick={onClick} className={finalClassName} disabled={disabled} type={type}>
+      <button onClick={onClick} className={finalClassName} disabled={disabled} type={type} {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)}>
         {content}
       </button>
     );
@@ -106,14 +109,14 @@ const GamingButton: React.FC<GamingButtonProps> = ({
   
   if (as === 'a') {
       return (
-          <a href={href} onClick={onClick} className={finalClassName} style={style}>
+          <a href={href} onClick={onClick} className={finalClassName} style={style} {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
               {children}
           </a>
       )
   }
 
   return (
-    <button onClick={onClick} className={finalClassName} disabled={disabled} type={type} style={style}>
+    <button onClick={onClick} className={finalClassName} disabled={disabled} type={type} style={style} {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)}>
       {children}
     </button>
   );
