@@ -19,7 +19,7 @@ const NavItem: React.FC<{ to: string; label: string; collapsed: boolean; active?
         <span className={`w-6 h-6 flex items-center justify-center text-sm ${collapsed ? '' : ''}`}>
           <Icon name={icon || 'dot'} className="w-4 h-4" aria-hidden />
         </span>
-        <span className={`truncate transition-all duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[140px]'}`} aria-hidden={collapsed}>
+        <span className={`truncate transition-all duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[120px]'}`} aria-hidden={collapsed}>
           {label}
         </span>
       </GamingButton>
@@ -59,7 +59,7 @@ const AdminLayout: React.FC<{ title?: string; children: React.ReactNode }> = ({ 
   return (
     <div className="min-h-screen flex bg-transparent">
       <aside
-        className={`flex-shrink-0 bg-nexus-dark/90 border-r border-nexus-gray/20 p-3 transition-all duration-200 transform ${isAnimating ? 'scale-95' : 'scale-100'} ${collapsed ? 'w-20' : 'w-64'}`}
+        className={`flex-shrink-0 bg-nexus-dark/90 border-r border-nexus-gray/20 p-3 transition-all duration-200 transform ${isAnimating ? 'scale-95' : 'scale-100'} ${collapsed ? 'w-20' : 'w-48'}`}
         aria-hidden={false}
       >
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} mb-6`}>
