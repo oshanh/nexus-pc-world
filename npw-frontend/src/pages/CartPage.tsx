@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import { userService } from '../services/userService';
 import GamingButton from '../components/GamingButton';
 import type { CartItem } from '../types';
 
@@ -158,18 +160,41 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
     const [checkoutState, setCheckoutState] = useState<CheckoutState>('cart');
     const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
 
+    const { user } = useAuth();
+
     const handleCheckout = () => {
-        setCheckoutState('processing');
-        setTimeout(() => {
-            const orderNumber = `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-            setConfirmedOrder({
-                items: cartItems,
-                total: cartTotal,
-                orderNumber,
-            });
-            clearCart();
-            setCheckoutState('confirmed');
-        }, 2000); // 2-second processing delay
+        (async () => {
+            setCheckoutState('processing');
+            try {
+                if (user?.id) {
+                    // Authenticated: create order server-side
+                    const res = await userService.createOrder({ items: cartItems, total: cartTotal });
+                    const order = res?.order || { id: `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
+                    setConfirmedOrder({ items: cartItems, total: cartTotal, orderNumber: order.id });
+                    // server-side createOrder clears cart; still ensure local state cleared
+                    await clearCart();
+                } else {
+                    // Guest: fallback to local persistence
+                    await new Promise((r) => setTimeout(r, 1200));
+                    const orderNumber = `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                    setConfirmedOrder({ items: cartItems, total: cartTotal, orderNumber });
+                    try {
+                        const key = `nexusOrders:${user?.id ?? 'guest'}`;
+                        const raw = localStorage.getItem(key);
+                        const existing = raw ? JSON.parse(raw) : [];
+                        const newOrder = { id: orderNumber, items: cartItems, total: cartTotal, createdAt: new Date().toISOString() };
+                        localStorage.setItem(key, JSON.stringify([newOrder, ...existing]));
+                    } catch (err) {
+                        console.warn('Failed to persist order', err);
+                    }
+                    clearCart();
+                }
+                setCheckoutState('confirmed');
+            } catch (err) {
+                console.warn('Checkout failed', err);
+                setCheckoutState('cart');
+            }
+        })();
     };
 
     if (checkoutState === 'confirmed' && confirmedOrder) {

@@ -8,7 +8,7 @@ import { CartProvider } from './src/contexts/CartContext';
 import { WishlistProvider } from './src/contexts/WishlistContext';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { ProductProvider } from './src/contexts/ProductContext';
-import type { Product } from './types';
+import type { Product } from './src/types';
 import HomePage from './src/pages/HomePage';
 import ProductsPage from './src/pages/ProductsPage';
 import CustomBuildPage from './src/pages/CustomBuildPage';

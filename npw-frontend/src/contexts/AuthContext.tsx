@@ -27,6 +27,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+   updateProfile: (newName: string) => void;
   isLoading: boolean;
   isAdmin: boolean;
   adminMode: boolean;
@@ -81,6 +82,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateProfile = (newName: string) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, name: newName };
+      try { localStorage.setItem('nexusUser', JSON.stringify(updated)); } catch (err) { /* ignore */ }
+      return updated;
+    });
+  };
+
   const signup = async (name: string, email: string, password: string) => {
     setIsLoading(true);
     try {
@@ -116,6 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     signup,
     logout,
+    updateProfile,
     isLoading,
   }), [user, isLoading, adminMode]);
 

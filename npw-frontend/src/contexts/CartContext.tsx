@@ -1,4 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
+import { useAuth } from './AuthContext';
+import { userService } from '../services/userService';
 import type { Product, CartItem } from '../types';
 
 interface CartContextType {
@@ -18,50 +20,152 @@ const parsePrice = (price: string): number => {
 };
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-      try {
-          const localData = localStorage.getItem('nexusCart');
-          return localData ? JSON.parse(localData) : [];
-      } catch (error) {
-          console.error("Could not parse cart data from localStorage", error);
-          return [];
-      }
-  });
+  const { user } = useAuth();
 
+  const storageKey = (uid?: string | null) => `nexusCart:${uid ?? 'guest'}`;
+
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+
+  // Load initial data and handle migration on auth changes
   useEffect(() => {
-      localStorage.setItem('nexusCart', JSON.stringify(cartItems));
-  }, [cartItems]);
+    let mounted = true;
+    const load = async () => {
+      try {
+        const uid = user?.id;
+        if (!uid) {
+          // Guest user: load from localStorage
+          const guestRaw = localStorage.getItem(storageKey(null));
+          const guest = guestRaw ? JSON.parse(guestRaw) : [];
+          if (mounted) setCartItems(guest);
+          return;
+        }
 
-  const addToCart = (product: Product) => {
-    setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === product.id);
-      if (existingItem) {
-        return prevItems.map(item =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
+        // Authenticated: fetch server cart and merge guest items
+        const [serverRes, guestRaw] = await Promise.all([
+          userService.getCart().catch(() => ({ cart: [] })),
+          (async () => localStorage.getItem(storageKey(null)))(),
+        ]);
+        const serverCart = serverRes?.cart || [];
+        const guestCart = guestRaw ? JSON.parse(guestRaw) : [];
+
+        if (guestCart.length === 0) {
+          if (mounted) setCartItems(serverCart);
+          // ensure no stale guest data
+          try { localStorage.removeItem(storageKey(null)); } catch {}
+          return;
+        }
+
+        // Merge serverCart and guestCart (sum quantities)
+        const mergedMap = new Map<string, CartItem>();
+        [...serverCart, ...guestCart].forEach((item: CartItem) => {
+          const existing = mergedMap.get(item.id);
+          if (existing) mergedMap.set(item.id, { ...existing, quantity: existing.quantity + (item.quantity || 1) });
+          else mergedMap.set(item.id, { ...item, quantity: item.quantity || 1 });
+        });
+        const merged = Array.from(mergedMap.values());
+        if (mounted) setCartItems(merged);
+        // Persist merged cart server-side and clear guest localStorage
+        try {
+          await userService.updateCart(merged);
+          localStorage.removeItem(storageKey(null));
+        } catch (err) {
+          console.warn('Failed to persist merged cart to server', err);
+        }
+      } catch (err) {
+        console.warn('Cart load/migration failed', err);
       }
-      return [...prevItems, { ...product, quantity: 1 }];
-    });
-  };
+    };
+    load();
+    return () => { mounted = false; };
+  }, [user?.id]);
 
-  const removeFromCart = (productId: string) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== productId));
-  };
+  // Persist to localStorage only for guests
+  useEffect(() => {
+    if (user?.id) return;
+    try {
+      localStorage.setItem(storageKey(null), JSON.stringify(cartItems));
+    } catch (err) {
+      // ignore
+    }
+  }, [cartItems, user?.id]);
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
+  const addToCart = async (product: Product) => {
+    if (!user?.id) {
+      // Guest: local only
+      setCartItems(prevItems => {
+        const existingItem = prevItems.find(item => item.id === product.id);
+        if (existingItem) {
+          return prevItems.map(item =>
+            item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          );
+        }
+        return [...prevItems, { ...product, quantity: 1 }];
+      });
       return;
     }
-    setCartItems(prevItems =>
-      prevItems.map(item =>
-        item.id === productId ? { ...item, quantity } : item
-      )
-    );
+
+    // Authenticated: perform server-side add and use server result
+    try {
+      const res = await userService.addCartItem({ ...product, quantity: 1 });
+      const updated = res?.cart ?? [];
+      setCartItems(updated);
+    } catch (err) {
+      console.warn('Failed to add item to server cart', err);
+    }
   };
 
-  const clearCart = () => {
-    setCartItems([]);
+  const removeFromCart = async (productId: string) => {
+    if (!user?.id) {
+      setCartItems(prevItems => prevItems.filter(item => item.id !== productId));
+      return;
+    }
+    try {
+      const res = await userService.removeCartItem(productId);
+      const updated = res?.cart ?? [];
+      setCartItems(updated);
+    } catch (err) {
+      console.warn('Failed to remove item from server cart', err);
+    }
+  };
+
+  const updateQuantity = async (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      await removeFromCart(productId);
+      return;
+    }
+
+    if (!user?.id) {
+      setCartItems(prevItems =>
+        prevItems.map(item =>
+          item.id === productId ? { ...item, quantity } : item
+        )
+      );
+      return;
+    }
+
+    // For authenticated users, update full cart on server
+    try {
+      const newItems = cartItems.map(item => item.id === productId ? { ...item, quantity } : item);
+      const res = await userService.updateCart(newItems);
+      const updated = res?.cart ?? [];
+      setCartItems(updated);
+    } catch (err) {
+      console.warn('Failed to update cart quantity on server', err);
+    }
+  };
+
+  const clearCart = async () => {
+    if (!user?.id) {
+      setCartItems([]);
+      return;
+    }
+    try {
+      const res = await userService.updateCart([]);
+      const updated = res?.cart ?? [];
+      setCartItems(updated);
+    } catch (err) {
+      console.warn('Failed to clear server cart', err);
+    }
   };
 
   const cartContextValue = useMemo(() => {

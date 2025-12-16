@@ -22,6 +22,7 @@ import AdminProducts from './pages/admin/AdminProducts';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminOrders from './pages/admin/AdminOrders';
+import CustomerDashboard from './pages/customer/CustomerDashboard';
 import GamingButton from './components/GamingButton';
 
 const NotFound: React.FC = () => (
@@ -87,6 +88,7 @@ const App: React.FC = () => {
                   <Route path="/admin/products" element={<AdminProducts navigateTo={navigateTo} />} />
                   <Route path="/admin/users" element={<AdminUsers />} />
                   <Route path="/admin/orders" element={<AdminOrders />} />
+                  <Route path="/account" element={<CustomerDashboard navigateTo={navigateTo} />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
