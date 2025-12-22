@@ -52,8 +52,8 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
 
     const [formData, setFormData] = useState<ProductFormState>({
         name: '',
-        category: 'Desktop',
-        subCategory: 'Normal PC',
+        category: '',
+        subCategory: '',
         price: '',
         stock: 0,
         shortDescription: '',
@@ -81,8 +81,8 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
     const resetForm = () => {
         setFormData({
             name: '',
-            category: 'Desktop',
-            subCategory: 'Normal PC',
+            category: '',
+            subCategory: '',
             price: '',
             stock: 0,
             shortDescription: '',
@@ -113,6 +113,10 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         if (name === 'category') {
+            if (value === '') {
+                setFormData((prev) => ({ ...prev, category: '', subCategory: '' }));
+                return;
+            }
             // When category changes, pick a related subcategory if available
             const cat = categories.find(c => c.name === value);
             const firstSub = (cat?.subcategories && cat.subcategories.length > 0) ? cat.subcategories[0] : (categories.length ? '' : FALLBACK_SUBCATS[0]);
@@ -166,7 +170,15 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
         const priceNumber = formData.price === '' ? NaN : Number(formData.price);
         
         // Basic validation
-        if (!formData.name || formData.price === '' || !Number.isFinite(priceNumber) || priceNumber < 0 || !formData.description) {
+        if (
+            !formData.name ||
+            !formData.category ||
+            !formData.subCategory ||
+            formData.price === '' ||
+            !Number.isFinite(priceNumber) ||
+            priceNumber < 0 ||
+            !formData.description
+        ) {
             showToast('Please fill in all required fields and ensure price is a non-negative number.', 'error');
             return;
         }
@@ -317,7 +329,10 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                                 setActiveTab('list');
                                 resetForm();
                             }}
-                            onSelectForm={() => setActiveTab('form')}
+                            onSelectForm={() => {
+                                if (!editingId) resetForm();
+                                setActiveTab('form');
+                            }}
                             onSelectCategories={() => setActiveTab('categories')}
                         />
                     </div>
