@@ -29,9 +29,11 @@ const RecommendationResult: React.FC<{ recommendation: BuildRecommendation }> = 
         { name: 'Case', value: recommendation.case },
     ];
 
-    const parsePrice = (price?: string): number => {
-        if (!price) return 0;
-        return parseFloat(price.replace(/[^0-9.]/g, ''));
+    const parsePrice = (price?: string | number): number => {
+        if (price === undefined || price === null) return 0;
+        if (typeof price === 'number') return Number.isFinite(price) ? price : 0;
+        const parsed = Number.parseFloat(String(price).replace(/[^0-9.]/g, ''));
+        return Number.isFinite(parsed) ? parsed : 0;
     };
 
     const totalPrice = components.reduce((acc, comp) => acc + parsePrice(comp.value.price), 0);
@@ -133,9 +135,11 @@ const CustomBuild: React.FC = () => {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        const parsePrice = (price?: string): number => {
-            if (!price) return 0;
-            return parseFloat(price.replace(/[^0-9.]/g, ''));
+        const parsePrice = (price?: string | number): number => {
+            if (price === undefined || price === null) return 0;
+            if (typeof price === 'number') return Number.isFinite(price) ? price : 0;
+            const parsed = Number.parseFloat(String(price).replace(/[^0-9.]/g, ''));
+            return Number.isFinite(parsed) ? parsed : 0;
         };
 
         doc.setFont('helvetica', 'bold');
