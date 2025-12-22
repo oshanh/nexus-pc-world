@@ -8,7 +8,7 @@ interface LoginPageProps {
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ navigateTo }) => {
-    const { login } = useAuth();
+    const { login, isAdmin } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -20,9 +20,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigateTo }) => {
         setIsSubmitting(true);
 
         try {
-            await login(email, password);
-            navigateTo('/'); // Redirect to home on success
+            const authenticated = await login(email, password);
+            // Redirect admin users to the admin area, others to home
+            if (authenticated?.role === 'admin') {
+                navigateTo('/admin');
+            } else {
+                navigateTo('/');
+            }
         } catch (err) {
+            console.error('Login error:', err);
             setError('Failed to sign in. Please check your credentials.');
         } finally {
             setIsSubmitting(false);

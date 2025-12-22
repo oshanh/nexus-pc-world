@@ -24,8 +24,8 @@ interface MeResponse {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  signup: (name: string, email: string, password: string) => Promise<User>;
   logout: () => void;
    updateProfile: (newName: string) => void;
   isLoading: boolean;
@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     setIsLoading(true);
     try {
       // The server sets an httpOnly cookie for authentication; call login then get /me
@@ -74,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('nexusUser', JSON.stringify(appUser));
       setUser(appUser);
       if (appUser.role === 'admin') setAdminMode(true);
+      return appUser;
     } catch (err) {
       console.error('Login error', err);
       throw err;
@@ -91,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const signup = async (name: string, email: string, password: string) => {
+  const signup = async (name: string, email: string, password: string): Promise<User> => {
     setIsLoading(true);
     try {
       // Server sets httpOnly cookie on signup; after signup fetch /me
@@ -102,6 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('nexusUser', JSON.stringify(appUser));
       setUser(appUser);
       setAdminMode(false);
+      return appUser;
     } catch (err) {
       console.error('Signup error', err);
       throw err;
