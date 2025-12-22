@@ -7,11 +7,11 @@ import AccessDenied from '../../components/AccessDenied';
 import AdminLayout from '../../components/AdminLayout';
 import type { Product } from '../../types';
 import { categoryService } from '../../services/categoryService';
-import AdminProductsTabs from './AdminProductsTabs';
-import AdminProductsInventoryTable from './AdminProductsInventoryTable';
-import AdminProductsForm from './AdminProductsForm';
-import AdminProductsCategoryManagement from './AdminProductsCategoryManagement';
-import type { AdminProductsTab, Category, ProductFormState } from './AdminProducts.types';
+import AdminProductsTabs from './AdminProducts/AdminProductsTabs';
+import AdminProductsInventoryTable from './AdminProducts/AdminProductsInventoryTable';
+import AdminProductsForm from './AdminProducts/AdminProductsForm';
+import AdminProductsCategoryManagement from './AdminProducts/AdminProductsCategoryManagement';
+import type { AdminProductsTab, Category, ProductFormState } from './AdminProducts/AdminProducts.types';
 
 interface AdminPageProps {
     navigateTo: (path: string) => void;

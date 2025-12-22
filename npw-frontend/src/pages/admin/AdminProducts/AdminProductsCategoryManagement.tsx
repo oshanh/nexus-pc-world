@@ -1,5 +1,5 @@
 import React from 'react';
-import GamingButton from '../../components/GamingButton';
+import GamingButton from '../../../components/GamingButton';
 import type { Category } from './AdminProducts.types';
 
 interface AdminProductsCategoryManagementProps {

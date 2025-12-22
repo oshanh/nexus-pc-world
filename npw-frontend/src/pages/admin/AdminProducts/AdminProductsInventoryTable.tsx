@@ -1,6 +1,6 @@
 import React from 'react';
-import GamingButton from '../../components/GamingButton';
-import type { Product } from '../../types';
+import GamingButton from '../../../components/GamingButton';
+import type { Product } from '../../../types';
 
 interface AdminProductsInventoryTableProps {
     products: Product[];
