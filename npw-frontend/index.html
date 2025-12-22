@@ -6,116 +6,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nexus Gaming PC Showroom</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700;900&family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-      :root {
-        --nexus-dark: #0a0a0f;
-        --nexus-gray: #1a1a2e;
-        --nexus-blue: #ef4444; /* Changed to Red */
-        --nexus-purple: #8a2be2;
-        --nexus-red: #ef4444;
-        --nexus-green: #22c55e;
-      }
-      
-      /* Global Text Selection Color */
-      ::selection {
-        background-color: #ef4444;
-        color: white;
-      }
-
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 10px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #1a1a2e;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #ef4444;
-        border-radius: 5px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #dc2626;
-      }
-
-      .cyber-btn {
-        position: relative;
-      }
-      .cyber-btn::before,
-      .cyber-btn::after {
-        content: '';
-        position: absolute;
-        width: 1rem;
-        height: 1rem;
-        border-style: solid;
-        border-width: 0;
-        transition: all 0.2s ease-in-out;
-        border-color: var(--cb-border-color, var(--nexus-blue));
-      }
-      .cyber-btn::before {
-        top: 0;
-        left: 0;
-        border-top-width: 2px;
-        border-left-width: 2px;
-      }
-      .cyber-btn::after {
-        bottom: 0;
-        right: 0;
-        border-bottom-width: 2px;
-        border-right-width: 2px;
-      }
-      .cyber-btn:hover:not(:disabled)::before,
-      .cyber-btn:hover:not(:disabled)::after {
-        width: calc(100%);
-        height: calc(100%);
-      }
-      html {
-        scroll-behavior: smooth;
-      }
-      body {
-        background-color: #0a0a0f;
-        /* A multi-layered background for a high-tech feel.
-           Layer 1: A subtle grid pattern using the brand's red color.
-           Layer 2: The original radial gradient for depth. */
-        background-image:
-          linear-gradient(rgba(239, 68, 68, 0.07) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(239, 68, 68, 0.07) 1px, transparent 1px),
-          radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0f 70%);
-        background-size: 50px 50px, 50px 50px, 100% 100%;
-        background-attachment: fixed;
-      }
-    </style>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              'exo': ['"Exo 2"', 'sans-serif'],
-              'poppins': ['Poppins', 'sans-serif'],
-            },
-            colors: {
-              'nexus-dark': '#0a0a0f',
-              'nexus-gray': '#1a1a2e',
-              'nexus-blue': '#ef4444', // Changed to Red
-              'nexus-purple': '#8a2be2',
-              'nexus-light': '#e0e0e0',
-            },
-            animation: {
-              'glow': 'glow 2s ease-in-out infinite',
-            },
-            keyframes: {
-              glow: {
-                '0%, 100%': { boxShadow: '0 0 5px #ef4444, 0 0 10px #ef4444, 0 0 15px #ef4444' }, // Changed to Red
-                '50%': { boxShadow: '0 0 20px #8a2be2, 0 0 30px #8a2be2, 0 0 40px #8a2be2' },
-              }
-            }
-          }
-        }
-      }
-    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script type="importmap">
@@ -128,7 +21,6 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body class="text-nexus-light font-poppins">
     <div id="root"></div>
