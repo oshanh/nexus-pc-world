@@ -7,17 +7,10 @@ const productSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: true,
-    enum: ['Desktop', 'Laptop', 'Accessory']
+    required: true
   },
   subCategory: {
-    type: String,
-    enum: [
-      'Normal PC', 'Middle-End PC', 'High-End PC',
-      'Normal Lap', 'Middle-End Lap', 'Gaming Lap',
-      'Cpu', 'Ram', 'Storage', 'VGA', 'Keyboard', 'Mouse',
-      'Headset', 'Monitors', 'Mouse Pads', 'HDMI Cables'
-    ]
+    type: String
   },
   shortDescription: {
     type: String,
@@ -28,8 +21,9 @@ const productSchema = new mongoose.Schema({
     required: true
   },
   price: {
-    type: String, // Keeping as string to match frontend "Rs. 150,000" format for now
-    required: true
+    type: Number,
+    required: true,
+    min: 0
   },
   stock: {
     type: Number,

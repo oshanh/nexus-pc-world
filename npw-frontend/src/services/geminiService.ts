@@ -12,7 +12,7 @@ const ai = new GoogleGenAI({ apiKey: API_KEY });
 const recommendationSchema = {
     type: Type.OBJECT,
     properties: {
-        cpu: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, reason: { type: Type.STRING }, price: { type: Type.STRING } }, required: ["name", "reason", "price"]},
+        cpu: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, reason: { type: Type.STRING }, price: { type: Type.NUMBER } }, required: ["name", "reason", "price"]},
         gpu: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, reason: { type: Type.STRING }, price: { type: Type.STRING } }, required: ["name", "reason", "price"]},
         ram: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, reason: { type: 'STRING' }, price: { type: Type.STRING } }, required: ["name", "reason", "price"]},
         storage: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, reason: { type: 'STRING' }, price: { type: Type.STRING } }, required: ["name", "reason", "price"]},
@@ -51,7 +51,7 @@ Instructions:
 5.  RAM: For the 'name' field, suggest a specific RAM kit (e.g., G.Skill Trident Z5 32GB DDR5-6000 CL30) that matches the user's selected capacity.
 6.  Motherboard: The 'reason' should explain why the user's chosen motherboard is a good fit for the build (considering the CPU, budget, etc.).
 7.  All your component choices (Storage, PSU) must be mindful of the user's total budget.
-8.  For EACH component (CPU, GPU, RAM, etc.), you MUST provide an estimated 'price' in Sri Lankan Rupees. The price should be a string formatted like "Rs X,XXX,XXX". This is a mandatory field.
+8.  For EACH component (CPU, GPU, RAM, etc.), you MUST provide an estimated 'price' in Sri Lankan Rupees as an integer value (e.g., 1049700). Do not include currency symbols or commas. This is a mandatory field.
 9.  Provide your response as a JSON object that adheres to the provided schema.
 10. The 'reason' for each component should be a brief explanation of why it's a good choice for this specific build.
 11. The 'summary' should be a short, encouraging paragraph about the build's capabilities based on the selected components and budget.`;

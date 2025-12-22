@@ -148,7 +148,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ onViewDetails, navi
                         </div>
 
                         <div className="mt-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <span className="text-3xl lg:text-4xl font-exo font-bold text-nexus-blue">{activeProduct.price}</span>
+                            <span className="text-3xl lg:text-4xl font-exo font-bold text-nexus-blue">Rs {Number(activeProduct.price).toLocaleString()}</span>
                             <div className="flex items-center gap-3">
                                 <GamingButton onClick={() => onViewDetails(activeProduct)} variant="secondary" size="sm">
                                     Details

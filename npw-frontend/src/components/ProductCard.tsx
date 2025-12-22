@@ -74,7 +74,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails, conte
         />
         <div className="absolute inset-0 bg-gradient-to-t from-nexus-dark via-nexus-dark/60 to-transparent"></div>
         <div className="absolute top-0 right-0 bg-nexus-dark text-white font-exo font-bold py-1 px-4 transform -skew-x-15 m-2 border border-nexus-blue/50">
-            <span className="block transform skew-x-15">{product.price}</span>
+            <span className="block transform skew-x-15">Rs {Number(product.price).toLocaleString()}</span>
         </div>
       </div>
 

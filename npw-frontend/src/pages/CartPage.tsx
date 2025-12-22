@@ -84,7 +84,7 @@ const CartItemRow: React.FC<{
         {/* Price */}
         <div className="mt-4 md:mt-0 md:col-span-2 flex justify-between md:justify-center items-center">
             <span className="md:hidden text-gray-400 font-bold">Price</span>
-            <span className="font-mono text-nexus-light">{product.price}</span>
+            <span className="font-mono text-nexus-light">Rs {Number(product.price).toLocaleString()}</span>
         </div>
 
         {/* Quantity */}

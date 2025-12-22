@@ -73,7 +73,7 @@ const CustomerDashboard: React.FC<{ navigateTo: (path: string) => void }> = ({ n
                         {order.items.map((it: any) => (
                           <div key={it.id} className="flex justify-between">
                             <div>{it.name} x{it.quantity}</div>
-                            <div className="font-mono">Rs {(parseFloat(it.price.replace(/[^0-9.]/g, '')) * it.quantity).toLocaleString()}</div>
+                            <div className="font-mono">Rs {((typeof it.price === 'number' ? it.price : parseFloat(String(it.price).replace(/[^0-9.]/g, '')) || 0) * it.quantity).toLocaleString()}</div>
                           </div>
                         ))}
                       </div>

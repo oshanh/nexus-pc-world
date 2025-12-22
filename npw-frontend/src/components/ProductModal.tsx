@@ -108,7 +108,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
         </div>
 
         <div className="p-4 bg-nexus-dark/50 border-t border-nexus-purple/20 flex justify-between items-center flex-shrink-0">
-            <span className="text-3xl font-bold text-nexus-blue">{product.price}</span>
+            <span className="text-3xl font-bold text-nexus-blue">Rs {Number(product.price).toLocaleString()}</span>
             <div className="flex items-center gap-2">
               {!isAdmin ? (
                 <>

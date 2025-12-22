@@ -78,7 +78,7 @@ export const PRODUCTS = [
     subCategory: 'Gaming Lap',
     shortDescription: 'Top-tier performance with RTX 4070 and Ryzen 9 processor.',
     description: 'The Helios Prime is our flagship gaming desktop, engineered for the enthusiast who demands nothing but the best. Experience breathtaking 4K gaming, seamless streaming, and lightning-fast content creation, all powered by the latest generation of components.',
-    price: 'Rs 1,049,700',
+    price: 1049700,
     stock: 5,
     imageUrls: [
         'https://dlcdnwebimgs.asus.com/gain/8b25250f-bf55-425f-93bd-b5d8e2744b3e/',
@@ -102,7 +102,7 @@ export const PRODUCTS = [
     subCategory: 'Middle-End Lap',
     shortDescription: 'Push the limits with expertly overclocked components.',
     description: 'Built for those who live on the edge, the Orion X-Treme comes professionally overclocked and stress-tested for maximum stable performance. Squeeze every last frame out of your favorite titles with this finely-tuned beast.',
-    price: 'Rs 839,700',
+    price: 839700,
     stock: 8,
     imageUrls: [
         'https://p1-ofp.static.pub//fes/cms/2024/05/20/2adx3swjr6461psulmwqrx6l0bkaab759083.png',
@@ -126,7 +126,7 @@ export const PRODUCTS = [
     subCategory: 'VGA',
     shortDescription: 'High-performance 1440p gaming with DLSS 3 technology.',
     description: 'The GeForce RTX 4070 is a quantum leap in performance for 1440p gaming. Powered by the NVIDIA Ada Lovelace architecture, it brings new levels of visual fidelity with AI-powered DLSS 3 and full ray tracing capabilities for the most immersive worlds.',
-    price: 'Rs 219,700',
+    price: 219700,
     stock: 15,
     imageUrls: [
         'https://gamersnexus.net/u/2024-01/vlcsnap-2024-01-25-16h12m35s203.jpg',
@@ -149,7 +149,7 @@ export const PRODUCTS = [
     subCategory: 'High-End PC',
     shortDescription: 'Desktop-grade power in a sleek, portable design.',
     description: 'Who says you can\'t take it with you? The Blade Pro packs the punch of a full-sized desktop into a stunning, thin-and-light chassis. Its high-refresh-rate QHD display brings games to life wherever you are.',
-    price: 'Rs 749,700',
+    price: 749700,
     stock: 3,
     imageUrls: [
         'https://static.vecteezy.com/system/resources/thumbnails/054/720/484/small/gaming-pc-on-white-background-on-transparent-background-png.png',
@@ -173,7 +173,7 @@ export const PRODUCTS = [
     subCategory: 'Gaming Lap',
     shortDescription: 'Thin, light, and powerful for gaming on the go.',
     description: 'The StealthBook Ultra is the ultimate travel companion for the discerning gamer. It combines a vibrant OLED display with an efficient yet powerful component selection to deliver an incredible gaming experience in an unbelievably portable package.',
-    price: 'Rs 569,700',
+    price: 569700,
     stock: 12,
     imageUrls: [
         'https://my-store.msi.com/cdn/shop/files/Thin15B12UX_3.png?v=1749804463&width=1214',
@@ -197,7 +197,7 @@ export const PRODUCTS = [
     subCategory: 'Keyboard',
     shortDescription: 'Mechanical keys with customizable per-key RGB lighting.',
     description: 'Gain a competitive edge with the CyberMech keyboard. Featuring tactile mechanical switches for lightning-fast response, a durable aluminum frame, and brilliant, fully customizable per-key RGB lighting to match your setup.',
-    price: 'Rs 44,700',
+    price: 44700,
     stock: 25,
     imageUrls: [
         'https://redragon.com/cdn/shop/files/RedragonK633CGO-RGB68-KeyCompactMechanicalGamingKeyboard_1_1_-Photoroom.png?v=1725356340',
@@ -220,7 +220,7 @@ export const PRODUCTS = [
     subCategory: 'Headset',
     shortDescription: 'Crystal-clear 7.1 surround sound with zero lag.',
     description: 'Immerse yourself in the game with the Void Wireless Headset. Pinpoint enemy locations with virtual 7.1 surround sound, communicate clearly with a broadcast-quality microphone, and enjoy lag-free audio for hours on a single charge.',
-    price: 'Rs 38,700',
+    price: 38700,
     stock: 30,
     imageUrls: [
         'https://bavin.ph/cdn/shop/files/4_52847082-21e4-426d-9e8f-82ccba991286.png?v=1753076193&width=493',
@@ -243,7 +243,7 @@ export const PRODUCTS = [
     subCategory: 'Mouse',
     shortDescription: 'Lightweight design with a high-precision 25K DPI sensor.',
     description: 'Experience flawless tracking and feather-light control with the Photon Pro. Its ergonomic, aultra-lightweight design reduces fatigue, while the state-of-the-art optical sensor ensures every movement translates to perfect in-game precision.',
-    price: 'Rs 26,700',
+    price: 26700,
     stock: 45,
     imageUrls: [
         'https://www.meetion.com/lifisher-1658459652651/jpg80-t3-scale100.webp',
@@ -266,7 +266,7 @@ export const PRODUCTS = [
     subCategory: 'Normal PC',
     shortDescription: 'Your perfect entry into high-FPS 1080p gaming.',
     description: 'The Vanguard is the ideal starting point for serious PC gaming. It delivers excellent performance in the most popular esports and AAA titles at 1080p resolution, with a clear upgrade path for the future.',
-    price: 'Rs 399,700',
+    price: 399700,
     stock: 10,
     imageUrls: [
         'https://5.imimg.com/data5/SELLER/Default/2025/8/540230892/FT/QT/YV/251969637/desktop-pc-png-pic-background-png-500x500.png',
@@ -290,7 +290,7 @@ export const PRODUCTS = [
     subCategory: 'Monitors',
     shortDescription: 'Dominate the battlefield with smooth 1440p performance.',
     description: 'Step up your game with the Aegis Sentinel. This build is perfectly balanced for high-refresh-rate gaming at 1440p, providing a competitive edge with stunning visual fidelity and responsive gameplay.',
-    price: 'Rs 66,500',
+    price: 66500,
     stock: 18,
     imageUrls: [
         'https://cdn.sanity.io/images/yqd1zell/production/f384a62bb0e81f2fb3a0e3e2e8db563207f33ec6-500x500.png',
@@ -312,7 +312,7 @@ export const PRODUCTS = [
     subCategory: 'Ram',
     shortDescription: 'Sleek, lightweight, and perfect for everyday productivity.',
     description: 'CORSAIR VENGEANCE RGB DDR5 RAM 32GB (2x16GB) 6400MHz',
-    price: 'Rs 33,000',
+    price: 33000,
     stock: 40,
     imageUrls: [
         'https://m.media-amazon.com/images/I/61D2DDpDITL._AC_SL1500_.jpg',
@@ -329,7 +329,7 @@ export const PRODUCTS = [
     subCategory: 'Cpu',
     shortDescription: 'The ultimate desktop processor for gaming and creation.',
     description: 'Experience unparalleled performance with the Intel Core i9-14900K. With 24 cores, 32 threads, and clock speeds up to 6.0 GHz, it\'s engineered to handle the most demanding games and creative workloads without breaking a sweat.',
-    price: 'Rs 199,700',
+    price: 199700,
     stock: 6,
     imageUrls: [
         'https://i0.wp.com/cyberdeals.lk/wp-content/uploads/2024/09/2-94-8.jpg?fit=600%2C600&ssl=1',

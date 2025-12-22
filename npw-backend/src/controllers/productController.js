@@ -33,6 +33,10 @@ const getProductById = async (req, res) => {
 // @access  Private/Admin
 const createProduct = async (req, res) => {
   try {
+    const { price } = req.body;
+    if (typeof price !== 'number' || isNaN(price) || price < 0) {
+      return res.status(400).json({ message: 'Invalid price. Price must be a non-negative number.' });
+    }
     const product = new Product(req.body);
     const createdProduct = await product.save();
     res.status(201).json(createdProduct);
@@ -49,6 +53,10 @@ const updateProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
 
     if (product) {
+      const { price } = req.body;
+      if (price !== undefined && (typeof price !== 'number' || isNaN(price) || price < 0)) {
+        return res.status(400).json({ message: 'Invalid price. Price must be a non-negative number.' });
+      }
       Object.assign(product, req.body);
       const updatedProduct = await product.save();
       res.json(updatedProduct);

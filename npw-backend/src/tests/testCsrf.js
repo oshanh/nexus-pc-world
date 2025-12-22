@@ -15,7 +15,7 @@ async function run() {
   res = await fetch(`${API}/api/products`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Cookie': cookie },
-    body: JSON.stringify({ name: 'NoCSRF', category: 'Accessory', shortDescription: 'test', description: 'test', price: 'Rs 1', stock: 1, imageUrls: [], specs: [] })
+    body: JSON.stringify({ name: 'NoCSRF', category: 'Accessory', shortDescription: 'test', description: 'test', price: 1, stock: 1, imageUrls: [], specs: [] })
   });
   console.log('POST without CSRF status:', res.status);
 
@@ -32,7 +32,7 @@ async function run() {
   res = await fetch(`${API}/api/products`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Cookie': combinedCookies, 'X-CSRF-Token': csrfToken },
-    body: JSON.stringify({ name: 'WithCSRF', category: 'Accessory', shortDescription: 'test', description: 'test', price: 'Rs 1', stock: 1, imageUrls: [], specs: [] })
+    body: JSON.stringify({ name: 'WithCSRF', category: 'Accessory', shortDescription: 'test', description: 'test', price: 1, stock: 1, imageUrls: [], specs: [] })
   });
   console.log('POST with CSRF status:', res.status);
   const body = await res.text();

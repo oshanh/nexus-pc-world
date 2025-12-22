@@ -6,7 +6,7 @@ export interface Product {
   subCategory?: 'Normal PC' | 'Middle-End PC' | 'High-End PC' | 'Normal Lap' | 'Middle-End Lap' | 'Gaming Lap' | 'Cpu' | 'Ram' | 'Storage' | 'VGA' | 'Keyboard' | 'Mouse' | 'Headset' | 'Monitors' | 'Mouse Pads' | 'HDMI Cables';
   shortDescription: string;
   description: string;
-  price: string;
+  price: number;
   stock: number;
   imageUrls: string[];
   specs: { name: string; value: string; }[];

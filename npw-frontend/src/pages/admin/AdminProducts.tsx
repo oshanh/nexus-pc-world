@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProducts } from '../../contexts/ProductContext';
 import GamingButton from '../../components/GamingButton';
@@ -7,35 +7,57 @@ import Toast from '../../components/Toast';
 import AccessDenied from '../../components/AccessDenied';
 import AdminLayout from '../../components/AdminLayout';
 import type { Product } from '../../types';
+import { categoryService } from '../../services/categoryService';
 
 interface AdminPageProps {
     navigateTo: (path: string) => void;
 }
 
-const CATEGORIES = ['Desktop', 'Laptop', 'Accessory'];
-const SUB_CATEGORIES = [
+// Fallbacks (used until categories are loaded)
+const FALLBACK_CATEGORIES = ['Desktop', 'Laptop', 'Accessory'];
+const FALLBACK_SUBCATS = [
     'Normal PC', 'Middle-End PC', 'High-End PC', 
     'Normal Lap', 'Middle-End Lap', 'Gaming Lap', 
     'Cpu', 'Ram', 'Storage', 'VGA', 'Keyboard', 'Mouse', 'Headset', 'Monitors', 'Mouse Pads', 'HDMI Cables'
 ];
 
-// using reusable Toast component in components/Toast.tsx
 
 const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
     const { isAdmin, adminMode, user } = useAuth();
     const { products, addProduct, deleteProduct, updateProduct } = useProducts();
-    const [activeTab, setActiveTab] = useState<'list' | 'form'>('list');
+    const [activeTab, setActiveTab] = useState<'list' | 'form' | 'categories'>('list');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({ message: '', type: 'success', visible: false });
+    const [categories, setCategories] = useState<Array<{ id: string; name: string; subcategories: string[] }>>([]);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [subInputs, setSubInputs] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await categoryService.getCategories();
+                setCategories(res.categories || []);
+            } catch (err) {
+                console.warn('Failed to load categories', err);
+            }
+        };
+        load();
+    }, []);
 
     // Form State
-    const [formData, setFormData] = useState<Partial<Product>>({
+    type ProductFormState = Omit<Partial<Product>, 'price' | 'category' | 'subCategory'> & {
+        price: number | '';
+        category: string;
+        subCategory: string;
+    };
+
+    const [formData, setFormData] = useState<ProductFormState>({
         name: '',
         category: 'Desktop',
         subCategory: 'Normal PC',
-        price: 'Rs ',
+        price: '',
         stock: 0,
         shortDescription: '',
         description: '',
@@ -64,7 +86,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
             name: '',
             category: 'Desktop',
             subCategory: 'Normal PC',
-            price: 'Rs ',
+            price: '',
             stock: 0,
             shortDescription: '',
             description: '',
@@ -78,8 +100,13 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
         const paddedImages = [...product.imageUrls];
         while (paddedImages.length < 4) paddedImages.push('');
 
+        const priceNum = (typeof product.price === 'number') ? product.price : (parseFloat(String(product.price).replace(/[^0-9.]/g, '')) || 0);
+
         setFormData({
             ...product,
+            category: product.category,
+            subCategory: product.subCategory ?? '',
+            price: priceNum,
             imageUrls: paddedImages
         });
         setEditingId(product.id);
@@ -88,9 +115,29 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+        if (name === 'category') {
+            // When category changes, pick a related subcategory if available
+            const cat = categories.find(c => c.name === value);
+            const firstSub = (cat?.subcategories && cat.subcategories.length > 0) ? cat.subcategories[0] : (categories.length ? '' : FALLBACK_SUBCATS[0]);
+            setFormData(prev => ({
+                ...prev,
+                category: value,
+                subCategory: prev.subCategory && cat?.subcategories?.includes(prev.subCategory) ? prev.subCategory : firstSub
+            }));
+            return;
+        }
+        if (name === 'price') {
+            if (value === '') {
+                setFormData(prev => ({ ...prev, price: '' }));
+                return;
+            }
+            const num = Number(value);
+            setFormData(prev => ({ ...prev, price: Number.isFinite(num) ? num : prev.price }));
+            return;
+        }
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'stock' ? parseInt(value) || 0 : value
+            [name]: name === 'stock' ? Number.parseInt(value) || 0 : value
         }));
     };
 
@@ -118,10 +165,12 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const priceNumber = formData.price === '' ? NaN : Number(formData.price);
         
         // Basic validation
-        if (!formData.name || !formData.price || !formData.description) {
-            showToast('Please fill in all required fields.', 'error');
+        if (!formData.name || formData.price === '' || !Number.isFinite(priceNumber) || priceNumber < 0 || !formData.description) {
+            showToast('Please fill in all required fields and ensure price is a non-negative number.', 'error');
             return;
         }
 
@@ -137,7 +186,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
             name: formData.name!,
             category: formData.category as any,
             subCategory: formData.subCategory as any,
-            price: formData.price!,
+            price: priceNumber,
             stock: formData.stock || 0,
             shortDescription: formData.shortDescription || formData.description!.substring(0, 100) + '...',
             description: formData.description!,
@@ -180,9 +229,85 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
         }
     };
 
+    const reloadCategories = async () => {
+        try {
+            const res = await categoryService.getCategories();
+            setCategories(res.categories || []);
+        } catch (err) {
+            console.warn('Failed to load categories', err);
+        }
+    };
+
+    const handleCreateCategory = async () => {
+        if (!newCategoryName.trim()) {
+            showToast('Category name required', 'error');
+            return;
+        }
+        try {
+            await categoryService.createCategory({ name: newCategoryName.trim(), subcategories: [] });
+            setNewCategoryName('');
+            showToast('Category created', 'success');
+            await reloadCategories();
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to create category', 'error');
+        }
+    };
+
+    const handleDeleteCategory = async (id: string, name: string) => {
+        if (!window.confirm(`Delete category "${name}"? This will clear the category field on any products using it.`)) return;
+        try {
+            await categoryService.deleteCategory(id);
+            showToast('Category deleted', 'success');
+            await reloadCategories();
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to delete category', 'error');
+        }
+    };
+
+    const handleAddSub = async (id: string) => {
+        const sub = (subInputs[id] || '').trim();
+        if (!sub) return showToast('Subcategory name required', 'error');
+        try {
+            await categoryService.addSubcategory(id, sub);
+            setSubInputs(prev => ({ ...prev, [id]: '' }));
+            showToast('Subcategory added', 'success');
+            await reloadCategories();
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to add subcategory', 'error');
+        }
+    };
+
+    const handleRemoveSub = async (id: string, sub: string) => {
+        if (!window.confirm(`Remove subcategory "${sub}"? This will clear the subcategory field on any products using it.`)) return;
+        try {
+            await categoryService.removeSubcategory(id, sub);
+            showToast('Subcategory removed', 'success');
+            await reloadCategories();
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to remove subcategory', 'error');
+        }
+    };
+
+    const noSpinStyles = `
+        /* Hide number input spinners across browsers */
+        .no-spin::-webkit-outer-spin-button,
+        .no-spin::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .no-spin {
+            -moz-appearance: textfield;
+        }
+    `;
+
     return (
         <AdminLayout title="">
             <section className="py-0">
+                <style>{noSpinStyles}</style>
                 <div className="container mx-auto px-6">
                     <div className="flex flex-col md:flex-row justify-between items-center mb-12">
                         <div>
@@ -209,6 +334,16 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                                 }`}
                             >
                                 {editingId ? 'EDIT UNIT' : 'NEW UNIT'}
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('categories')}
+                                className={`ml-4 px-4 py-2 rounded-full font-exo font-bold text-sm transition-all duration-300 ${
+                                    activeTab === 'categories' 
+                                    ? 'bg-nexus-blue text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]' 
+                                    : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                CATEGORY
                             </button>
                         </div>
                     </div>
@@ -237,7 +372,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                                                         {product.category}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 font-mono">{product.price}</td>
+                                                <td className="px-6 py-4 font-mono">Rs {Number(product.price).toLocaleString()}</td>
                                                 <td className="px-6 py-4 font-mono text-nexus-blue">{product.stock || 0}</td>
                                                 <td className="px-6 py-4 text-right">
                                                     <div className="flex justify-end gap-2">
@@ -283,7 +418,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                                 </div>
                             )}
                         </div>
-                    ) : (
+                    ) : activeTab === 'form' ? (
                         <div className="max-w-3xl mx-auto bg-nexus-dark p-8 rounded-lg border border-nexus-blue/30 shadow-2xl">
                             <h2 className="text-2xl font-exo font-bold text-white mb-6 border-b border-nexus-gray pb-4">
                                 {editingId ? `Update Unit ID: ${editingId}` : 'Initialize New Unit'}
@@ -302,14 +437,17 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="price" className="block text-nexus-blue text-sm font-bold mb-2">Price</label>
+                                        <label htmlFor="price" className="block text-nexus-blue text-sm font-bold mb-2">Price (Rs.)</label>
                                         <input 
-                                            type="text" 
+                                            type="number" 
                                             name="price"
-                                            value={formData.price} 
+                                            value={formData.price === '' ? '' : formData.price} 
                                             onChange={handleInputChange} 
-                                            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white focus:ring-2 focus:ring-nexus-blue focus:outline-none"
+                                            onWheel={(e) => { (e.currentTarget as HTMLInputElement).blur(); }}
+                                            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white focus:ring-2 focus:ring-nexus-blue focus:outline-none no-spin"
                                             required
+                                            min={0}
+                                            step={1}
                                         />
                                     </div>
                                 </div>
@@ -323,7 +461,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                                             onChange={handleInputChange} 
                                             className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white focus:ring-2 focus:ring-nexus-blue focus:outline-none"
                                         >
-                                            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                            {(categories.length ? categories.map(cat => cat.name) : FALLBACK_CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                     </div>
                                     <div>
@@ -334,7 +472,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                                             onChange={handleInputChange} 
                                             className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white focus:ring-2 focus:ring-nexus-blue focus:outline-none"
                                         >
-                                            {SUB_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                            {((categories.length ? (categories.find(c => c.name === formData.category)?.subcategories || []) : FALLBACK_SUBCATS)).map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                     </div>
                                 </div>
@@ -454,6 +592,61 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                                     )}
                                 </div>
                             </form>
+                        </div>
+                    ) : (
+                        <div className="max-w-4xl mx-auto bg-nexus-dark p-6 rounded-lg border border-nexus-blue/30 shadow-lg">
+                            <h2 className="text-2xl font-exo font-bold text-white mb-4">Category Management</h2>
+
+                            <div className="mb-6 flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    placeholder="New category name"
+                                    className="flex-1 bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white focus:ring-2 focus:ring-nexus-blue focus:outline-none"
+                                />
+                                <GamingButton onClick={handleCreateCategory} variant="cta">Create</GamingButton>
+                            </div>
+
+                            <div className="space-y-4">
+                                {categories.length === 0 ? (
+                                    <div className="text-gray-400">No categories yet. Create one to begin.</div>
+                                ) : (
+                                    categories.map(cat => (
+                                        <div key={cat.id} className="bg-nexus-dark/80 p-4 rounded border border-nexus-gray flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                            <div>
+                                                <div className="flex items-center gap-3">
+                                                    <h3 className="font-bold text-white">{cat.name}</h3>
+                                                    <span className="text-sm text-gray-400">{cat.subcategories?.length ?? 0} sub</span>
+                                                </div>
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {(cat.subcategories || []).map(sub => (
+                                                        <div key={sub} className="bg-nexus-blue/10 text-nexus-blue px-2 py-1 rounded text-sm flex items-center gap-2">
+                                                            <span>{sub}</span>
+                                                            <button onClick={() => handleRemoveSub(cat.id, sub)} className="text-red-400 text-xs" aria-label={`Remove ${sub}`}>✕</button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                <div className="mt-3 flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={subInputs[cat.id] || ''}
+                                                        onChange={(e) => setSubInputs(prev => ({ ...prev, [cat.id]: e.target.value }))}
+                                                        placeholder="Add subcategory"
+                                                        className="bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white focus:ring-2 focus:ring-nexus-blue focus:outline-none"
+                                                    />
+                                                    <GamingButton size="sm" onClick={() => handleAddSub(cat.id)}>Add</GamingButton>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex-shrink-0">
+                                                <GamingButton variant="danger" size="sm" onClick={() => handleDeleteCategory(cat.id, cat.name)}>Delete</GamingButton>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>

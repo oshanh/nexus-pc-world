@@ -43,6 +43,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch (err) {
       console.error(err);
       setError('Failed to add product');
+      throw err;
     }
   };
 
@@ -53,6 +54,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch (err) {
       console.error(err);
       setError('Failed to delete product');
+      throw err;
     }
   };
 
@@ -63,6 +65,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch (err) {
       console.error(err);
       setError('Failed to update product');
+      throw err;
     }
   };
 
