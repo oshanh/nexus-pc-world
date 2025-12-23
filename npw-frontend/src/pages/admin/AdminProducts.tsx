@@ -103,7 +103,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
             ...product,
             category: product.category,
             subCategory: product.subCategory ?? '',
-            price: priceNum,
+            price: String(priceNum),
             imageUrls: paddedImages
         });
         setEditingId(product.id);
@@ -132,8 +132,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                 setFormData(prev => ({ ...prev, price: '' }));
                 return;
             }
-            const num = Number(value);
-            setFormData(prev => ({ ...prev, price: Number.isFinite(num) ? num : prev.price }));
+            setFormData(prev => ({ ...prev, price: value }));
             return;
         }
         setFormData(prev => ({

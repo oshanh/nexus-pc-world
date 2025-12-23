@@ -21,7 +21,7 @@ const AdminProductsInventoryTable: React.FC<AdminProductsInventoryTableProps> = 
                 <table className="w-full text-left">
                     <thead className="bg-nexus-gray text-nexus-blue uppercase text-sm font-bold">
                         <tr>
-                            <th className="px-6 py-4">ID</th>
+                            <th className="px-6 py-4">Code</th>
                             <th className="px-6 py-4">Product Name</th>
                             <th className="px-6 py-4">Category</th>
                             <th className="px-6 py-4">Price</th>
@@ -32,7 +32,7 @@ const AdminProductsInventoryTable: React.FC<AdminProductsInventoryTableProps> = 
                     <tbody className="divide-y divide-nexus-gray/50 text-gray-300">
                         {products.map((product) => (
                             <tr key={product.id} className="hover:bg-nexus-gray/30 transition-colors">
-                                <td className="px-6 py-4 font-mono text-xs">{product.id}</td>
+                                <td className="px-6 py-4 font-mono text-xs text-gray-300">{product.code || '-'}</td>
                                 <td className="px-6 py-4 font-bold text-white">{product.name}</td>
                                 <td className="px-6 py-4">
                                     <span className="bg-nexus-blue/10 text-nexus-blue px-2 py-1 rounded text-xs border border-nexus-blue/20">

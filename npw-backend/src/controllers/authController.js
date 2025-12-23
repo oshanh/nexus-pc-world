@@ -58,6 +58,7 @@ const login = async (req, res) => {
 			sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
 			secure: process.env.NODE_ENV === 'production',
 			maxAge: 7 * 24 * 60 * 60 * 1000
+			
 		});
 
 		res.json({ token, user: { id: user._id.toString(), username: user.username, email: user.email, role: user.role } });

@@ -68,6 +68,9 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
             <div>
               <h2 className="text-2xl font-exo font-bold text-white">{product.name}</h2>
               <p className="text-nexus-blue text-sm font-bold uppercase">{product.subCategory || product.category}</p>
+              {product.code && (
+                <p className="text-gray-400 text-xs font-mono">Code: {product.code}</p>
+              )}
             </div>
             <GamingButton onClick={onClose} iconOnly={true} size="sm" variant="secondary" aria-label="Close modal">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>

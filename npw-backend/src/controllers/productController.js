@@ -1,11 +1,37 @@
 const Product = require('../models/Product');
 
+const normalizeCode = (code) => {
+  if (typeof code !== 'string') return null;
+  const trimmed = code.trim().toUpperCase();
+  if (!trimmed) return null;
+  // Accept only the same format enforced by the schema: NPW-XXXXXX
+  if (!/^NPW-[A-Z0-9]{6}$/.test(trimmed)) return null;
+  return trimmed;
+};
+
 // @desc    Get all products
 // @route   GET /api/products
 // @access  Public
 const getProducts = async (req, res) => {
   try {
     const products = await Product.find({});
+
+    // One-time backfill for older products that don't yet have a code.
+    const missingCode = products.filter(p => !p.code);
+    if (missingCode.length > 0) {
+      await Promise.all(
+        missingCode.map(async (p) => {
+          try {
+            await p.save();
+          } catch (err) {
+            // Best-effort backfill; don't break the GET endpoint.
+            // eslint-disable-next-line no-console
+            console.warn('Product code backfill failed:', err?.message || err);
+          }
+        })
+      );
+    }
+
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -19,6 +45,15 @@ const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (product) {
+      if (!product.code) {
+        try {
+          await product.save();
+        } catch (err) {
+          // Ignore backfill failures for read.
+          // eslint-disable-next-line no-console
+          console.warn('Product code backfill failed:', err?.message || err);
+        }
+      }
       res.json(product);
     } else {
       res.status(404).json({ message: 'Product not found' });
@@ -33,10 +68,19 @@ const getProductById = async (req, res) => {
 // @access  Private/Admin
 const createProduct = async (req, res) => {
   try {
-    const { price } = req.body;
-    if (typeof price !== 'number' || isNaN(price) || price < 0) {
+    const { price, code } = req.body;
+    if (typeof price !== 'number' || Number.isNaN(price) || price < 0) {
       return res.status(400).json({ message: 'Invalid price. Price must be a non-negative number.' });
     }
+
+    if (code !== undefined) {
+      const normalized = normalizeCode(code);
+      if (!normalized) {
+        return res.status(400).json({ message: 'Invalid code. Code must match format NPW-XXXXXX.' });
+      }
+      req.body.code = normalized;
+    }
+
     const product = new Product(req.body);
     const createdProduct = await product.save();
     res.status(201).json(createdProduct);
@@ -53,10 +97,19 @@ const updateProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
 
     if (product) {
-      const { price } = req.body;
-      if (price !== undefined && (typeof price !== 'number' || isNaN(price) || price < 0)) {
+      const { price, code } = req.body;
+      if (price !== undefined && (typeof price !== 'number' || Number.isNaN(price) || price < 0)) {
         return res.status(400).json({ message: 'Invalid price. Price must be a non-negative number.' });
       }
+
+      if (code !== undefined) {
+        const normalized = normalizeCode(code);
+        if (!normalized) {
+          return res.status(400).json({ message: 'Invalid code. Code must match format NPW-XXXXXX.' });
+        }
+        req.body.code = normalized;
+      }
+
       Object.assign(product, req.body);
       const updatedProduct = await product.save();
       res.json(updatedProduct);

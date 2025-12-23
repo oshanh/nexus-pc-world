@@ -81,6 +81,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails, conte
       <div className="p-6 flex flex-col flex-grow">
         <p className="text-nexus-blue text-xs font-bold uppercase mb-1">{product.subCategory || product.category}</p>
         <h3 className="text-xl font-exo font-bold text-white mb-2 transition-colors duration-300 group-hover:text-nexus-blue">{product.name}</h3>
+                {product.code && (
+                    <p className="text-gray-400 text-xs font-mono mb-2">Code: {product.code}</p>
+                )}
         <p className="text-nexus-light mb-4 text-sm flex-grow">{product.shortDescription}</p>
         
         <div className="mt-auto pt-4 border-t border-nexus-gray/50 flex items-center gap-2">

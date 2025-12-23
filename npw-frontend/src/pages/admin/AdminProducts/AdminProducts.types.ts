@@ -9,7 +9,7 @@ export type Category = {
 };
 
 export type ProductFormState = Omit<Partial<Product>, 'price' | 'category' | 'subCategory'> & {
-    price: number | '';
+    price: string;
     category: string;
     subCategory: string;
 };

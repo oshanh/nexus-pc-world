@@ -70,7 +70,7 @@ const AdminProductsForm: React.FC<AdminProductsFormProps> = ({
                         <input
                             type="number"
                             name="price"
-                            value={formData.price === '' ? '' : formData.price}
+                            value={formData.price}
                             onChange={onInputChange}
                             onWheel={(e) => {
                                 (e.currentTarget as HTMLInputElement).blur();
@@ -78,7 +78,7 @@ const AdminProductsForm: React.FC<AdminProductsFormProps> = ({
                             className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white focus:ring-2 focus:ring-nexus-blue focus:outline-none no-spin"
                             required
                             min={0}
-                            step={1}
+                            step={0.01}
                         />
                     </div>
                 </div>
