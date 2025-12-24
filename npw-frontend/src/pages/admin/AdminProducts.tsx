@@ -11,6 +11,7 @@ import AdminProductsTabs from './AdminProducts/AdminProductsTabs';
 import AdminProductsInventoryTable from './AdminProducts/AdminProductsInventoryTable';
 import AdminProductsForm from './AdminProducts/AdminProductsForm';
 import AdminProductsCategoryManagement from './AdminProducts/AdminProductsCategoryManagement';
+import AdminProductStockInModal from './AdminProducts/AdminProductStockInModal';
 import type { AdminProductsTab, Category, ProductFormState } from './AdminProducts/AdminProducts.types';
 
 interface AdminPageProps {
@@ -37,6 +38,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [subInputs, setSubInputs] = useState<Record<string, string>>({});
+    const [stockInProduct, setStockInProduct] = useState<Product | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -342,6 +344,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                             isDeleting={isDeleting}
                             onEditClick={handleEditClick}
                             onDeleteClick={handleDelete}
+                            onStockInClick={(product) => setStockInProduct(product)}
                         />
                     ) : activeTab === 'form' ? (
                         <AdminProductsForm
@@ -378,6 +381,13 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                         />
                     )}
                 </div>
+
+                {stockInProduct && (
+                    <AdminProductStockInModal
+                        product={stockInProduct}
+                        onClose={() => setStockInProduct(null)}
+                    />
+                )}
                 <Toast message={toast.message} type={toast.type} visible={toast.visible} />
             </section>
         </AdminLayout>

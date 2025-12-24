@@ -1,6 +1,6 @@
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import type { Product } from '../types';
+import React, { createContext, useCallback, useMemo, useState, useContext, useEffect } from 'react';
+import type { Product, StockInPayload, StockInRecord } from '../types';
 import { productService } from '../services/productService';
 
 interface ProductContextType {
@@ -8,6 +8,7 @@ interface ProductContextType {
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
+  stockInProduct: (id: string, payload: StockInPayload) => Promise<{ product: Product; record: StockInRecord }>;
   loading: boolean;
   error: string | null;
 }
@@ -19,7 +20,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const data = await productService.getAll();
       setProducts(data);
@@ -30,13 +31,13 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  const addProduct = async (newProductData: Omit<Product, 'id'>) => {
+  const addProduct = useCallback(async (newProductData: Omit<Product, 'id'>) => {
     try {
       const newProduct = await productService.create(newProductData);
       setProducts(prev => [...prev, newProduct]);
@@ -45,9 +46,9 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setError('Failed to add product');
       throw err;
     }
-  };
+  }, []);
 
-  const deleteProduct = async (id: string) => {
+  const deleteProduct = useCallback(async (id: string) => {
     try {
       await productService.delete(id);
       setProducts(prev => prev.filter(p => p.id !== id));
@@ -56,9 +57,9 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setError('Failed to delete product');
       throw err;
     }
-  };
+  }, []);
 
-  const updateProduct = async (id: string, updatedProduct: Partial<Product>) => {
+  const updateProduct = useCallback(async (id: string, updatedProduct: Partial<Product>) => {
     try {
       const data = await productService.update(id, updatedProduct);
       setProducts(prev => prev.map(p => p.id === id ? data : p));
@@ -67,10 +68,27 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setError('Failed to update product');
       throw err;
     }
-  };
+  }, []);
+
+  const stockInProduct = useCallback(async (id: string, payload: StockInPayload) => {
+    try {
+      const data = await productService.stockIn(id, payload);
+      setProducts(prev => prev.map(p => p.id === id ? data.product : p));
+      return data;
+    } catch (err) {
+      console.error(err);
+      setError('Failed to stock in product');
+      throw err;
+    }
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({ products, addProduct, deleteProduct, updateProduct, stockInProduct, loading, error }),
+    [products, addProduct, deleteProduct, updateProduct, stockInProduct, loading, error]
+  );
 
   return (
-    <ProductContext.Provider value={{ products, addProduct, deleteProduct, updateProduct, loading, error }}>
+    <ProductContext.Provider value={contextValue}>
       {children}
     </ProductContext.Provider>
   );

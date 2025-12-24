@@ -1,5 +1,12 @@
 const Product = require('../models/Product');
 
+const parseOptionalDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+};
+
 const normalizeCode = (code) => {
   if (typeof code !== 'string') return null;
   const trimmed = code.trim().toUpperCase();
@@ -14,7 +21,7 @@ const normalizeCode = (code) => {
 // @access  Public
 const getProducts = async (req, res) => {
   try {
-    const products = await Product.find({});
+    const products = await Product.find({}).select('-stockHistory');
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -26,7 +33,7 @@ const getProducts = async (req, res) => {
 // @access  Public
 const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).select('-stockHistory');
     if (product) {
       res.json(product);
     } else {
@@ -43,6 +50,12 @@ const getProductById = async (req, res) => {
 const createProduct = async (req, res) => {
   try {
     const { price, code } = req.body;
+
+    // Prevent clients from injecting stock history; use the stock-in endpoint instead.
+    if (req.body && Object.hasOwn(req.body, 'stockHistory')) {
+      delete req.body.stockHistory;
+    }
+
     if (typeof price !== 'number' || Number.isNaN(price) || price < 0) {
       return res.status(400).json({ message: 'Invalid price. Price must be a non-negative number.' });
     }
@@ -68,6 +81,11 @@ const createProduct = async (req, res) => {
 // @access  Private/Admin
 const updateProduct = async (req, res) => {
   try {
+    // Prevent clients from injecting stock history; use the stock-in endpoint instead.
+    if (req.body && Object.hasOwn(req.body, 'stockHistory')) {
+      delete req.body.stockHistory;
+    }
+
     const product = await Product.findById(req.params.id);
 
     if (product) {
@@ -113,10 +131,79 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+// @desc    Stock in (add stock + record history)
+// @route   POST /api/products/:id/stock-in
+// @access  Private/Admin
+const stockInProduct = async (req, res) => {
+  try {
+    const quantity = Number(req.body?.quantity);
+    const sellingUnitPrice = Number(req.body?.sellingUnitPrice);
+    const buyingUnitPrice = req.body?.buyingUnitPrice === undefined || req.body?.buyingUnitPrice === null || req.body?.buyingUnitPrice === ''
+      ? undefined
+      : Number(req.body.buyingUnitPrice);
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return res.status(400).json({ message: 'Invalid quantity. Quantity must be a positive number.' });
+    }
+    if (!Number.isFinite(sellingUnitPrice) || sellingUnitPrice < 0) {
+      return res.status(400).json({ message: 'Invalid sellingUnitPrice. Must be a non-negative number.' });
+    }
+    if (buyingUnitPrice !== undefined && (!Number.isFinite(buyingUnitPrice) || buyingUnitPrice < 0)) {
+      return res.status(400).json({ message: 'Invalid buyingUnitPrice. Must be a non-negative number if provided.' });
+    }
+
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    const date = parseOptionalDate(req.body?.date) || new Date();
+
+    const record = {
+      date,
+      quantity,
+      sellingUnitPrice
+    };
+
+    if (buyingUnitPrice !== undefined) {
+      record.buyingUnitPrice = buyingUnitPrice;
+    }
+
+    product.stockHistory = Array.isArray(product.stockHistory) ? product.stockHistory : [];
+    product.stockHistory.unshift(record);
+
+    product.stock = Number(product.stock || 0) + quantity;
+    // Keep product.price as the current selling price.
+    product.price = sellingUnitPrice;
+
+    await product.save();
+
+    const productJson = product.toJSON();
+    delete productJson.stockHistory;
+
+    return res.status(201).json({ product: productJson, record });
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Get stock-in history
+// @route   GET /api/products/:id/stock-in/history
+// @access  Private/Admin
+const getStockInHistory = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).select('stockHistory');
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    return res.json({ history: product.stockHistory || [] });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getProducts,
   getProductById,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  stockInProduct,
+  getStockInHistory
 };

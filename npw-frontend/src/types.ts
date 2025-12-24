@@ -43,3 +43,17 @@ export interface BuildPreferences {
     caseModel: string;
     coolerModel: string;
 }
+
+export interface StockInRecord {
+  date: string;
+  quantity: number;
+  buyingUnitPrice?: number;
+  sellingUnitPrice: number;
+}
+
+export interface StockInPayload {
+  date?: string;
+  quantity: number;
+  buyingUnitPrice?: number;
+  sellingUnitPrice: number;
+}

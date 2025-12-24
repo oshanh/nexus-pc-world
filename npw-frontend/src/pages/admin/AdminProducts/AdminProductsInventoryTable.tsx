@@ -7,13 +7,15 @@ interface AdminProductsInventoryTableProps {
     isDeleting: string | null;
     onEditClick: (product: Product) => void;
     onDeleteClick: (id: string, name: string) => void;
+    onStockInClick: (product: Product) => void;
 }
 
 const AdminProductsInventoryTable: React.FC<AdminProductsInventoryTableProps> = ({
     products,
     isDeleting,
     onEditClick,
-    onDeleteClick
+    onDeleteClick,
+    onStockInClick
 }) => {
     return (
         <div className="bg-nexus-dark rounded-lg border border-nexus-gray overflow-hidden">
@@ -43,6 +45,29 @@ const AdminProductsInventoryTable: React.FC<AdminProductsInventoryTableProps> = 
                                 <td className="px-6 py-4 font-mono text-nexus-blue">{product.stock || 0}</td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
+                                        <GamingButton
+                                            onClick={() => onStockInClick(product)}
+                                            variant="secondary"
+                                            size="sm"
+                                            iconOnly={true}
+                                            className="!h-8 !w-8"
+                                            aria-label="Stock In"
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="h-4 w-4"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M12 4v16m8-8H4"
+                                                />
+                                            </svg>
+                                        </GamingButton>
                                         <GamingButton
                                             onClick={() => onEditClick(product)}
                                             variant="secondary"

@@ -57,6 +57,27 @@ const productSchema = new mongoose.Schema({
     required: true,
     default: 0
   },
+  stockHistory: [{
+    date: {
+      type: Date,
+      required: true,
+      default: Date.now
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1
+    },
+    buyingUnitPrice: {
+      type: Number,
+      min: 0
+    },
+    sellingUnitPrice: {
+      type: Number,
+      required: true,
+      min: 0
+    }
+  }],
   imageUrls: [{
     type: String
   }],
