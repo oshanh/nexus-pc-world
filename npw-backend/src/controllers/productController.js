@@ -15,23 +15,6 @@ const normalizeCode = (code) => {
 const getProducts = async (req, res) => {
   try {
     const products = await Product.find({});
-
-    // One-time backfill for older products that don't yet have a code.
-    const missingCode = products.filter(p => !p.code);
-    if (missingCode.length > 0) {
-      await Promise.all(
-        missingCode.map(async (p) => {
-          try {
-            await p.save();
-          } catch (err) {
-            // Best-effort backfill; don't break the GET endpoint.
-            // eslint-disable-next-line no-console
-            console.warn('Product code backfill failed:', err?.message || err);
-          }
-        })
-      );
-    }
-
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -45,15 +28,6 @@ const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (product) {
-      if (!product.code) {
-        try {
-          await product.save();
-        } catch (err) {
-          // Ignore backfill failures for read.
-          // eslint-disable-next-line no-console
-          console.warn('Product code backfill failed:', err?.message || err);
-        }
-      }
       res.json(product);
     } else {
       res.status(404).json({ message: 'Product not found' });

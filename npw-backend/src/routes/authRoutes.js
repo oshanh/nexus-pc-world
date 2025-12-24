@@ -10,12 +10,12 @@ router.post('/signup', [
   check('username', 'Username is required').notEmpty(),
   check('email', 'Valid email is required').isEmail(),
   check('password', 'Password must be at least 6 characters').isLength({ min: 6 })
-], signup);
+], csrfProtection, signup);
 
 router.post('/login', [
   check('email', 'Valid email is required').isEmail(),
   check('password', 'Password is required').exists()
-], login);
+], csrfProtection, login);
 
 router.get('/me', verifyToken, me);
 router.post('/logout', csrfProtection, verifyToken, (req, res) => { // clear cookie

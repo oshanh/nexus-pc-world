@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "seed:products": "node src/seeders/products.js",
     "seed:admin": "node src/seeders/admin.js",
+    "seed:backfill:product-codes": "node src/seeders/backfillProductCodes.js",
     "seed:all": "node src/seeders/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -36,17 +36,29 @@ const AdminProductsForm: React.FC<AdminProductsFormProps> = ({
     onCancel
 }) => {
     const categoryOptions = categories.length ? categories.map((cat) => cat.name) : fallbackCategories;
+    
+    const getSubCategoryOptions = () => {
+        if (categories.length) {
+            return categories.find((c) => c.name === formData.category)?.subcategories || [];
+        }
+        return fallbackSubCategories;
+    };
+    
     const subCategoryOptions =
         formData.category === ''
             ? []
-            : categories.length
-                ? categories.find((c) => c.name === formData.category)?.subcategories || []
-                : fallbackSubCategories;
+            : getSubCategoryOptions();
+
+    let headerText = 'Initialize New Unit';
+    if (editingId) {
+        headerText = 'Update Product:';
+        if (formData.code) headerText += ` ${formData.code}`;
+    }
 
     return (
         <div className="max-w-3xl mx-auto bg-nexus-dark p-8 rounded-lg border border-nexus-blue/30 shadow-2xl">
             <h2 className="text-2xl font-exo font-bold text-white mb-6 border-b border-nexus-gray pb-4">
-                {editingId ? `Update Unit ID: ${editingId}` : 'Initialize New Unit'}
+                {headerText}
             </h2>
             <form onSubmit={onSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -138,7 +150,10 @@ const AdminProductsForm: React.FC<AdminProductsFormProps> = ({
                         name="stock"
                         value={formData.stock}
                         onChange={onInputChange}
-                        className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white focus:ring-2 focus:ring-nexus-blue focus:outline-none"
+                        onWheel={(e) => {
+                                (e.currentTarget as HTMLInputElement).blur();
+                            }}
+                        className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white focus:ring-2 focus:ring-nexus-blue focus:outline-none no-spin"
                         min="0"
                         required
                     />

@@ -1,5 +1,4 @@
 const User = require('../models/User');
-const csrfProtection = require('../middleware/csrfMiddleware');
 
 const getCart = async (req, res) => {
   try {
