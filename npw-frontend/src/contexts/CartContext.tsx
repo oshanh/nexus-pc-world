@@ -8,7 +8,7 @@ interface CartContextType {
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void;
+  clearCart: () => Promise<void>;
   cartCount: number;
   cartTotal: number;
 }
@@ -17,7 +17,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const parsePrice = (price: string | number): number => {
     if (typeof price === 'number') return price;
-    return parseFloat(String(price).replace(/[^0-9.]/g, '')) || 0;
+  return Number.parseFloat(String(price).replaceAll(/[^0-9.]/g, '')) || 0;
 };
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -86,7 +86,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       localStorage.setItem(storageKey(null), JSON.stringify(cartItems));
     } catch (err) {
-      // ignore
+      console.warn('Failed to persist cart', err);
     }
   }, [cartItems, user?.id]);
 

@@ -5,8 +5,9 @@ import { userService } from '../services/userService';
 import GamingButton from '../components/GamingButton';
 import type { CartItem } from '../types';
 
-const parsePrice = (price: string): number => {
-    return parseFloat(price.replace(/[^0-9.]/g, ''));
+const parsePrice = (price: string | number): number => {
+    if (typeof price === 'number') return price;
+    return Number.parseFloat(String(price).replaceAll(/[^0-9.]/g, '')) || 0;
 };
 
 const EmptyCart: React.FC<{ navigateTo: (path: string) => void }> = ({ navigateTo }) => (
@@ -64,16 +65,25 @@ const CartItemRow: React.FC<{
     product: CartItem;
     onUpdateQuantity: (id: number, qty: number) => void;
     onRemove: (id: number) => void;
-}> = ({ product, onUpdateQuantity, onRemove }) => (
-     <div className="bg-nexus-dark p-4 rounded-lg md:grid md:grid-cols-12 md:gap-4 md:items-center border border-nexus-gray/50">
+}> = ({ product, onUpdateQuantity, onRemove }) => {
+    const firstImageUrl = product.imageUrls?.find((u) => u?.trim());
+
+    return (
+        <div className="bg-nexus-dark p-4 rounded-lg md:grid md:grid-cols-12 md:gap-4 md:items-center border border-nexus-gray/50">
         {/* Product Info */}
         <div className="md:col-span-5 flex items-center gap-4">
             <div className="w-20 h-20 flex-shrink-0">
-                <img
-                    src={product.imageUrls[0]}
-                    alt={product.name}
-                    className="h-full w-full object-cover rounded-md"
-                />
+                {firstImageUrl ? (
+                    <img
+                        src={firstImageUrl}
+                        alt={product.name}
+                        className="h-full w-full object-cover rounded-md"
+                    />
+                ) : (
+                    <div className="h-full w-full rounded-md bg-nexus-gray border border-nexus-gray/50 flex items-center justify-center text-xs text-gray-500">
+                        No image
+                    </div>
+                )}
             </div>
             <div>
                 <p className="font-bold text-white">{product.name}</p>
@@ -91,9 +101,9 @@ const CartItemRow: React.FC<{
         <div className="mt-4 md:mt-0 md:col-span-3 flex justify-between md:justify-center items-center">
              <span className="md:hidden text-gray-400 font-bold">Quantity</span>
             <div className="flex items-center">
-                <GamingButton onClick={() => onUpdateQuantity(product.id, product.quantity - 1)} size="sm" iconOnly={true} className="!h-8 !w-8">-</GamingButton>
+                <GamingButton onClick={() => onUpdateQuantity(Number(product.id), product.quantity - 1)} size="sm" iconOnly={true} className="!h-8 !w-8">-</GamingButton>
                 <span className="w-12 text-center font-bold text-white text-lg">{product.quantity}</span>
-                <GamingButton onClick={() => onUpdateQuantity(product.id, product.quantity + 1)} size="sm" iconOnly={true} className="!h-8 !w-8">+</GamingButton>
+                <GamingButton onClick={() => onUpdateQuantity(Number(product.id), product.quantity + 1)} size="sm" iconOnly={true} className="!h-8 !w-8">+</GamingButton>
             </div>
         </div>
 
@@ -102,13 +112,14 @@ const CartItemRow: React.FC<{
             <span className="md:hidden text-gray-400 font-bold">Total</span>
             <div className="flex items-center gap-4">
                 <span className="font-mono font-bold text-white">Rs {(parsePrice(product.price) * product.quantity).toLocaleString()}</span>
-                <GamingButton onClick={() => onRemove(product.id)} iconOnly={true} size="sm" variant="danger" aria-label={`Remove ${product.name} from cart`}>
+                <GamingButton onClick={() => onRemove(Number(product.id))} iconOnly={true} size="sm" variant="danger" aria-label={`Remove ${product.name} from cart`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                 </GamingButton>
             </div>
         </div>
     </div>
-);
+    );
+};
 
 const OrderSummary: React.FC<{
     total: number;
@@ -235,8 +246,8 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
                         <CartItemRow
                             key={product.id}
                             product={product}
-                            onUpdateQuantity={updateQuantity}
-                            onRemove={removeFromCart}
+                            onUpdateQuantity={(id, qty) => updateQuantity(String(id), qty)}
+                            onRemove={(id) => removeFromCart(String(id))}
                         />
                       ))}
                     </div>
