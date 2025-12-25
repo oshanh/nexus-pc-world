@@ -1,4 +1,5 @@
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
 const connectDB = require('../config/mongodb');
 const Product = require('../models/Product');
 
@@ -233,25 +234,43 @@ const products = [
 ];
 
 const seedDB = async () => {
+  let inserted = 0;
+  let skipped = 0;
+  let failed = 0;
+
   try {
     await connectDB();
 
-    // Upsert products: do not delete existing products; avoid duplicates by product name
-    const ops = products.map(p => ({
-      updateOne: {
-        filter: { name: p.name },
-        update: { $setOnInsert: p },
-        upsert: true
+    for (const product of products) {
+      // eslint-disable-next-line no-await-in-loop
+      const existing = await Product.findOne({ name: product.name }).select('_id').lean();
+      if (existing) {
+        skipped += 1;
+        continue;
       }
-    }));
 
-    const result = await Product.bulkWrite(ops);
-    console.log(`Products upsert result: inserted ${result.upsertedCount || 0}, modified ${result.modifiedCount || 0}, matched ${result.matchedCount || 0}`);
+      try {
+        // Triggers Product pre('validate') to generate code.
+        // eslint-disable-next-line no-await-in-loop
+        await Product.create(product);
+        inserted += 1;
+      } catch (err) {
+        failed += 1;
+        console.error(`Failed to seed product "${product.name}":`, err?.message || err);
+      }
+    }
 
-    process.exit(0);
+    console.log(`Products seed complete: inserted ${inserted}, skipped ${skipped}, failed ${failed}`);
+    if (failed > 0) process.exitCode = 1;
   } catch (err) {
     console.error(err);
-    process.exit(1);
+    process.exitCode = 1;
+  } finally {
+    try {
+      await mongoose.disconnect();
+    } catch {
+      // ignore
+    }
   }
 };
 

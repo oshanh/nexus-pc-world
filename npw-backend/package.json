@@ -6,9 +6,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "seed:categories": "node src/seeders/categories.js",
     "seed:products": "node src/seeders/products.js",
-    "seed:admin": "node src/seeders/admin.js",
-    "seed:backfill:product-codes": "node src/seeders/backfillProductCodes.js",
+    "seed:users": "node src/seeders/users.js",
     "seed:all": "node src/seeders/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

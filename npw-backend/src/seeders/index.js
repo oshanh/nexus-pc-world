@@ -8,8 +8,9 @@ const run = (script) => {
 };
 
 try {
+  run('categories.js');
   run('products.js');
-  run('admin.js');
+  run('users.js');
   console.log('All seeders finished');
 } catch (err) {
   console.error('Seeding failed', err);
