@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import { authService } from '../services/authService';
 
@@ -6,7 +5,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'customer';
 }
 
 // Backend API response types
@@ -14,7 +13,7 @@ interface BackendUser {
   id: string;
   username: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'customer';
 }
 
 interface MeResponse {
@@ -87,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(prev => {
       if (!prev) return prev;
       const updated = { ...prev, name: newName };
-      try { localStorage.setItem('nexusUser', JSON.stringify(updated)); } catch (err) { /* ignore */ }
+      try { localStorage.setItem('nexusUser', JSON.stringify(updated)); } catch { /* ignore */ }
       return updated;
     });
   };

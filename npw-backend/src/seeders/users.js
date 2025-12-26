@@ -23,19 +23,19 @@ const usersToSeed = [
     username: 'customer1',
     email: 'customer1@nexus.com',
     password: 'customer123',
-    role: 'user'
+    role: 'customer'
   },
   {
     username: 'customer2',
     email: 'customer2@nexus.com',
     password: 'customer123',
-    role: 'user'
+    role: 'customer'
   },
   {
     username: 'customer3',
     email: 'customer3@nexus.com',
     password: 'customer123',
-    role: 'user'
+    role: 'customer'
   }
 ];
 

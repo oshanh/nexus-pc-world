@@ -4,6 +4,7 @@ import type { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import GamingButton from './GamingButton';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ProductCardProps {
   product: Product;
@@ -15,6 +16,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails, conte
   const { addToCart } = useCart();
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const [addState, setAddState] = useState<'idle' | 'adding' | 'added'>('idle');
+  const { isAdmin } = useAuth();
   
   const isWishlisted = isInWishlist(product.id);
 
@@ -96,7 +98,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails, conte
                         }}
                         variant="danger"
                         size="sm"
-                        className="flex-grow"
+                        className="grow"
                     >
                         Remove
                     </GamingButton>
@@ -105,7 +107,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails, conte
                         variant={addState === 'added' ? 'success' : 'primary'}
                         size="sm"
                         disabled={addState !== 'idle'}
-                        className="flex-grow"
+                        className="grow"
                     >
                         {addState === 'idle' && 'Add to Cart'}
                         {addState === 'adding' && 'Adding...'}
@@ -121,21 +123,22 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails, conte
                         }}
                         variant="secondary"
                         size="sm"
-                        className="flex-grow"
+                        className="grow"
                     >
                         Details
                     </GamingButton>
+                     {!isAdmin && 
                      <GamingButton
                         onClick={handleAddToCart}
                         variant={addState === 'added' ? 'success' : 'primary'}
                         size="sm"
                         disabled={addState !== 'idle'}
-                        className="flex-grow"
+                        className="grow"
                      >
                         {addState === 'idle' && 'Add to Cart'}
                         {addState === 'adding' && 'Adding...'}
                         {addState === 'added' && 'Added!'}
-                     </GamingButton>
+                     </GamingButton>}
                 </>
             )}
         </div>

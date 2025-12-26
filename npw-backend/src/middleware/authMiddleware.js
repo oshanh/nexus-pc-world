@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 const verifyToken = (req, res, next) => {
+
   const token = req.cookies?.token;
 
   if (!token) {
@@ -11,6 +12,7 @@ const verifyToken = (req, res, next) => {
     req.user = { id: payload.id, role: payload.role };
     next();
   } catch (err) {
+    console.error('Token verification failed:', err);
     return res.status(401).json({ message: 'Not authenticated' });
   }
 };
