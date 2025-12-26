@@ -13,6 +13,13 @@ import AdminProductsForm from './AdminProducts/AdminProductsForm';
 import AdminProductsCategoryManagement from './AdminProducts/AdminProductsCategoryManagement';
 import AdminProductStockInModal from './AdminProducts/AdminProductStockInModal';
 import type { AdminProductsTab, Category, ProductFormState } from './AdminProducts/AdminProducts.types';
+import { productService } from '../../services/productService';
+import ConfirmDialog from '../../components/ConfirmDialog';
+
+type PendingProductAction =
+    | { type: 'deactivate'; id: string; name: string }
+    | { type: 'reactivate'; id: string; name: string }
+    | null;
 
 interface AdminPageProps {
     navigateTo: (path: string) => void;
@@ -29,7 +36,7 @@ const FALLBACK_SUBCATS = [
 
 const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
     const { isAdmin, adminMode, user } = useAuth();
-    const { products, addProduct, deleteProduct, updateProduct } = useProducts();
+    const { products, addProduct, updateProduct } = useProducts();
     const [activeTab, setActiveTab] = useState<AdminProductsTab>('list');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +46,9 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
     const [newCategoryName, setNewCategoryName] = useState('');
     const [subInputs, setSubInputs] = useState<Record<string, string>>({});
     const [stockInProduct, setStockInProduct] = useState<Product | null>(null);
+    const [inactiveProducts, setInactiveProducts] = useState<Product[]>([]);
+    const [inactiveLoaded, setInactiveLoaded] = useState(false);
+    const [pendingAction, setPendingAction] = useState<PendingProductAction>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -51,6 +61,23 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
         };
         load();
     }, []);
+
+    useEffect(() => {
+        const loadInactive = async () => {
+            try {
+                const data = await productService.getInactive();
+                setInactiveProducts(Array.isArray(data) ? data : []);
+                setInactiveLoaded(true);
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to load inactive products', 'error');
+            }
+        };
+
+        if (activeTab === 'inactive' && !inactiveLoaded) {
+            loadInactive();
+        }
+    }, [activeTab, inactiveLoaded]);
 
     const [formData, setFormData] = useState<ProductFormState>({
         name: '',
@@ -224,19 +251,53 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
         }
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
-        
+    const performDeactivate = async (id: string) => {
         setIsDeleting(id);
         try {
-            await deleteProduct(id);
-            showToast('Product deleted successfully!', 'success');
+            const updated = await updateProduct(id, { isActive: false });
+            setInactiveProducts(prev => {
+                const next = prev.filter(p => p.id !== id);
+                next.unshift(updated);
+                return next;
+            });
+            setInactiveLoaded(true);
+            showToast('Product deactivated successfully!', 'success');
         } catch (err) {
-            showToast('Failed to delete product. Please try again.', 'error');
+            showToast('Failed to deactivate product. Please try again.', 'error');
             console.error(err);
         } finally {
             setIsDeleting(null);
         }
+    };
+
+    const performReactivate = async (id: string) => {
+        setIsDeleting(id);
+        try {
+            await updateProduct(id, { isActive: true });
+            setInactiveProducts(prev => prev.filter(p => p.id !== id));
+            showToast('Product reactivated successfully!', 'success');
+        } catch (err) {
+            showToast('Failed to reactivate product. Please try again.', 'error');
+            console.error(err);
+        } finally {
+            setIsDeleting(null);
+        }
+    };
+
+    const requestDeactivate = (id: string, name: string) => {
+        setPendingAction({ type: 'deactivate', id, name });
+    };
+
+    const requestReactivate = (id: string, name: string) => {
+        setPendingAction({ type: 'reactivate', id, name });
+    };
+
+    const confirmPendingAction = async () => {
+        if (!pendingAction) return;
+        const { id, type } = pendingAction;
+        setPendingAction(null);
+        if (type === 'deactivate') return performDeactivate(id);
+        return performReactivate(id);
     };
 
     const reloadCategories = async () => {
@@ -265,7 +326,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
     };
 
     const handleDeleteCategory = async (id: string, name: string) => {
-        if (!window.confirm(`Delete category "${name}"? This will clear the category field on any products using it.`)) return;
+        if (!globalThis.confirm(`Delete category "${name}"? This will clear the category field on any products using it.`)) return;
         try {
             await categoryService.deleteCategory(id);
             showToast('Category deleted', 'success');
@@ -291,7 +352,7 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
     };
 
     const handleRemoveSub = async (id: string, sub: string) => {
-        if (!window.confirm(`Remove subcategory "${sub}"? This will clear the subcategory field on any products using it.`)) return;
+        if (!globalThis.confirm(`Remove subcategory "${sub}"? This will clear the subcategory field on any products using it.`)) return;
         try {
             await categoryService.removeSubcategory(id, sub);
             showToast('Subcategory removed', 'success');
@@ -314,6 +375,81 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
         }
     `;
 
+    let tabContent: React.ReactNode;
+    if (activeTab === 'list') {
+        tabContent = (
+            <AdminProductsInventoryTable
+                products={products.filter(p => p.isActive !== false)}
+                isDeleting={isDeleting}
+                onEditClick={handleEditClick}
+                onDeactivateClick={requestDeactivate}
+                onStockInClick={(product) => setStockInProduct(product)}
+            />
+        );
+    } else if (activeTab === 'inactive') {
+        tabContent = (
+            <AdminProductsInventoryTable
+                mode="inactive"
+                products={inactiveProducts}
+                isDeleting={isDeleting}
+                onEditClick={handleEditClick}
+                onReactivateClick={requestReactivate}
+                onStockInClick={(product) => setStockInProduct(product)}
+            />
+        );
+    } else if (activeTab === 'form') {
+        tabContent = (
+            <AdminProductsForm
+                editingId={editingId}
+                formData={formData}
+                categories={categories}
+                fallbackCategories={FALLBACK_CATEGORIES}
+                fallbackSubCategories={FALLBACK_SUBCATS}
+                isSubmitting={isSubmitting}
+                onSubmit={handleSubmit}
+                onInputChange={handleInputChange}
+                onImageUrlChange={handleImageUrlChange}
+                onSpecChange={handleSpecChange}
+                onAddSpecField={addSpecField}
+                onRemoveSpecField={removeSpecField}
+                onCancel={() => {
+                    resetForm();
+                    setActiveTab('list');
+                }}
+            />
+        );
+    } else {
+        tabContent = (
+            <AdminProductsCategoryManagement
+                categories={categories}
+                newCategoryName={newCategoryName}
+                subInputs={subInputs}
+                onNewCategoryNameChange={setNewCategoryName}
+                onSubInputChange={(categoryId, next) =>
+                    setSubInputs((prev) => ({ ...prev, [categoryId]: next }))
+                }
+                onCreateCategory={handleCreateCategory}
+                onDeleteCategory={handleDeleteCategory}
+                onAddSub={handleAddSub}
+                onRemoveSub={handleRemoveSub}
+            />
+        );
+    }
+
+    const confirmOpen = !!pendingAction;
+    const confirmIsReactivate = pendingAction?.type === 'reactivate';
+    const confirmTitle = confirmIsReactivate ? 'Reactivate product?' : 'Deactivate product?';
+    let confirmDescription: string | undefined;
+    if (pendingAction) {
+        if (confirmIsReactivate) {
+            confirmDescription = `Reactivate "${pendingAction.name}"? This will make it visible to customers again.`;
+        } else {
+            confirmDescription = `Deactivate "${pendingAction.name}"? This will hide it from customers.`;
+        }
+    }
+    const confirmText = confirmIsReactivate ? 'Reactivate' : 'Deactivate';
+    const confirmVariant = confirmIsReactivate ? 'primary' : 'danger';
+
     return (
         <AdminLayout title="">
             <section className="py-0">
@@ -330,6 +466,10 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                                 setActiveTab('list');
                                 resetForm();
                             }}
+                            onSelectInactive={() => {
+                                setActiveTab('inactive');
+                                resetForm();
+                            }}
                             onSelectForm={() => {
                                 if (!editingId) resetForm();
                                 setActiveTab('form');
@@ -338,49 +478,20 @@ const AdminProducts: React.FC<AdminPageProps> = ({ navigateTo }) => {
                         />
                     </div>
 
-                    {activeTab === 'list' ? (
-                        <AdminProductsInventoryTable
-                            products={products}
-                            isDeleting={isDeleting}
-                            onEditClick={handleEditClick}
-                            onDeleteClick={handleDelete}
-                            onStockInClick={(product) => setStockInProduct(product)}
-                        />
-                    ) : activeTab === 'form' ? (
-                        <AdminProductsForm
-                            editingId={editingId}
-                            formData={formData}
-                            categories={categories}
-                            fallbackCategories={FALLBACK_CATEGORIES}
-                            fallbackSubCategories={FALLBACK_SUBCATS}
-                            isSubmitting={isSubmitting}
-                            onSubmit={handleSubmit}
-                            onInputChange={handleInputChange}
-                            onImageUrlChange={handleImageUrlChange}
-                            onSpecChange={handleSpecChange}
-                            onAddSpecField={addSpecField}
-                            onRemoveSpecField={removeSpecField}
-                            onCancel={() => {
-                                resetForm();
-                                setActiveTab('list');
-                            }}
-                        />
-                    ) : (
-                        <AdminProductsCategoryManagement
-                            categories={categories}
-                            newCategoryName={newCategoryName}
-                            subInputs={subInputs}
-                            onNewCategoryNameChange={setNewCategoryName}
-                            onSubInputChange={(categoryId, next) =>
-                                setSubInputs((prev) => ({ ...prev, [categoryId]: next }))
-                            }
-                            onCreateCategory={handleCreateCategory}
-                            onDeleteCategory={handleDeleteCategory}
-                            onAddSub={handleAddSub}
-                            onRemoveSub={handleRemoveSub}
-                        />
-                    )}
+                    {tabContent}
                 </div>
+
+                <ConfirmDialog
+                    open={confirmOpen}
+                    title={confirmTitle}
+                    description={confirmDescription}
+                    confirmText={confirmText}
+                    cancelText="Cancel"
+                    variant={confirmVariant}
+                    isLoading={!!pendingAction && isDeleting === pendingAction.id}
+                    onCancel={() => setPendingAction(null)}
+                    onConfirm={confirmPendingAction}
+                />
 
                 {stockInProduct && (
                     <AdminProductStockInModal

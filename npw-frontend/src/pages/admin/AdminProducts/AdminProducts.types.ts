@@ -1,6 +1,6 @@
 import type { Product } from '../../../types';
 
-export type AdminProductsTab = 'list' | 'form' | 'categories';
+export type AdminProductsTab = 'list' | 'inactive' | 'form' | 'categories';
 
 export type Category = {
     id: string;

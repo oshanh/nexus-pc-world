@@ -5,6 +5,9 @@ export const productService = {
   getAll: async (): Promise<Product[]> => {
     return client.get('/products');
   },
+  getInactive: async (): Promise<Product[]> => {
+    return client.get('/products/inactive');
+  },
   getById: async (id: string): Promise<Product> => {
     return client.get(`/products/${id}`);
   },

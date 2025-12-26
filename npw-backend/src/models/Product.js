@@ -28,6 +28,11 @@ const productSchema = new mongoose.Schema({
     uppercase: true,
     match: PRODUCT_CODE_REGEX
   },
+  isActive: {
+    type: Boolean,
+    default: true,
+    index: true
+  },
   name: {
     type: String,
     required: true

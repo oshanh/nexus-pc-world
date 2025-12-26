@@ -5,6 +5,7 @@ interface AdminProductsTabsProps {
     activeTab: AdminProductsTab;
     editingId: string | null;
     onSelectList: () => void;
+    onSelectInactive: () => void;
     onSelectForm: () => void;
     onSelectCategories: () => void;
 }
@@ -13,6 +14,7 @@ const AdminProductsTabs: React.FC<AdminProductsTabsProps> = ({
     activeTab,
     editingId,
     onSelectList,
+    onSelectInactive,
     onSelectForm,
     onSelectCategories
 }) => {
@@ -27,6 +29,16 @@ const AdminProductsTabs: React.FC<AdminProductsTabsProps> = ({
                 }`}
             >
                 INVENTORY
+            </button>
+            <button
+                onClick={onSelectInactive}
+                className={`px-8 py-2 rounded-full font-exo font-bold text-sm transition-all duration-300 ${
+                    activeTab === 'inactive'
+                        ? 'bg-nexus-blue text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]'
+                        : 'text-gray-400 hover:text-white'
+                }`}
+            >
+                INACTIVE
             </button>
             <button
                 onClick={onSelectForm}

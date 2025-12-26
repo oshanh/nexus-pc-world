@@ -7,7 +7,7 @@ interface ProductContextType {
   products: Product[];
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
-  updateProduct: (id: string, product: Partial<Product>) => Promise<void>;
+  updateProduct: (id: string, product: Partial<Product>) => Promise<Product>;
   stockInProduct: (id: string, payload: StockInPayload) => Promise<{ product: Product; record: StockInRecord }>;
   loading: boolean;
   error: string | null;
@@ -62,7 +62,20 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const updateProduct = useCallback(async (id: string, updatedProduct: Partial<Product>) => {
     try {
       const data = await productService.update(id, updatedProduct);
-      setProducts(prev => prev.map(p => p.id === id ? data : p));
+      setProducts(prev => {
+        const exists = prev.some(p => p.id === id);
+
+        if (data.isActive === false) {
+          return prev.filter(p => p.id !== id);
+        }
+
+        if (exists) {
+          return prev.map(p => p.id === id ? data : p);
+        }
+
+        return [...prev, data];
+      });
+      return data;
     } catch (err) {
       console.error(err);
       setError('Failed to update product');

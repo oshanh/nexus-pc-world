@@ -21,10 +21,22 @@ const normalizeCode = (code) => {
 // @access  Public
 const getProducts = async (req, res) => {
   try {
-    const products = await Product.find({}).select('-stockHistory');
+    const products = await Product.find({ isActive: { $ne: false } }).select('-stockHistory');
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get inactive products (admin)
+// @route   GET /api/products/inactive
+// @access  Private/Admin
+const getInactiveProducts = async (req, res) => {
+  try {
+    const products = await Product.find({ isActive: false }).select('-stockHistory');
+    return res.json(products);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
@@ -34,6 +46,9 @@ const getProducts = async (req, res) => {
 const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).select('-stockHistory');
+    if (product && product.isActive === false) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
     if (product) {
       res.json(product);
     } else {
@@ -84,6 +99,10 @@ const updateProduct = async (req, res) => {
     // Prevent clients from injecting stock history; use the stock-in endpoint instead.
     if (req.body && Object.hasOwn(req.body, 'stockHistory')) {
       delete req.body.stockHistory;
+    }
+
+    if (req.body && Object.hasOwn(req.body, 'isActive') && typeof req.body.isActive !== 'boolean') {
+      return res.status(400).json({ message: 'Invalid isActive. Must be a boolean.' });
     }
 
     const product = await Product.findById(req.params.id);
@@ -200,6 +219,7 @@ const getStockInHistory = async (req, res) => {
 
 module.exports = {
   getProducts,
+  getInactiveProducts,
   getProductById,
   createProduct,
   updateProduct,

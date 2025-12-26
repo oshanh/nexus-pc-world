@@ -2,21 +2,25 @@ import React from 'react';
 import GamingButton from '../../../components/GamingButton';
 import type { Product } from '../../../types';
 
-interface AdminProductsInventoryTableProps {
+type AdminProductsInventoryTableProps = {
     products: Product[];
     isDeleting: string | null;
     onEditClick: (product: Product) => void;
-    onDeleteClick: (id: string, name: string) => void;
     onStockInClick: (product: Product) => void;
-}
+} & (
+        | {
+                mode?: 'active';
+                onDeactivateClick: (id: string, name: string) => void;
+            }
+        | {
+                mode: 'inactive';
+                onReactivateClick: (id: string, name: string) => void;
+            }
+    );
 
-const AdminProductsInventoryTable: React.FC<AdminProductsInventoryTableProps> = ({
-    products,
-    isDeleting,
-    onEditClick,
-    onDeleteClick,
-    onStockInClick
-}) => {
+const AdminProductsInventoryTable: React.FC<AdminProductsInventoryTableProps> = (props) => {
+    const { products, isDeleting, onEditClick, onStockInClick } = props;
+    const isInactive = props.mode === 'inactive';
     return (
         <div className="bg-nexus-dark rounded-lg border border-nexus-gray overflow-hidden">
             <div className="overflow-x-auto">
@@ -50,7 +54,7 @@ const AdminProductsInventoryTable: React.FC<AdminProductsInventoryTableProps> = 
                                             variant="secondary"
                                             size="sm"
                                             iconOnly={true}
-                                            className="!h-8 !w-8"
+                                            className="h-8! w-8!"
                                             aria-label="Stock In"
                                         >
                                             <svg
@@ -73,7 +77,7 @@ const AdminProductsInventoryTable: React.FC<AdminProductsInventoryTableProps> = 
                                             variant="secondary"
                                             size="sm"
                                             iconOnly={true}
-                                            className="!h-8 !w-8"
+                                            className="h-8! w-8!"
                                             aria-label="Edit"
                                         >
                                             <svg
@@ -92,13 +96,16 @@ const AdminProductsInventoryTable: React.FC<AdminProductsInventoryTableProps> = 
                                             </svg>
                                         </GamingButton>
                                         <GamingButton
-                                            onClick={() => onDeleteClick(product.id, product.name)}
-                                            variant="danger"
+                                            onClick={() => {
+                                                if (props.mode === 'inactive') return props.onReactivateClick(product.id, product.name);
+                                                return props.onDeactivateClick(product.id, product.name);
+                                            }}
+                                            variant={isInactive ? 'secondary' : 'danger'}
                                             size="sm"
                                             iconOnly={true}
                                             disabled={isDeleting === product.id}
-                                            className="!h-8 !w-8"
-                                            aria-label="Delete"
+                                            className="h-8! w-8!"
+                                            aria-label={isInactive ? 'Reactivate' : 'Deactivate'}
                                         >
                                             {isDeleting === product.id ? (
                                                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -129,7 +136,9 @@ const AdminProductsInventoryTable: React.FC<AdminProductsInventoryTableProps> = 
                                                         strokeLinecap="round"
                                                         strokeLinejoin="round"
                                                         strokeWidth={2}
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                        d={isInactive
+                                                            ? 'M9 12l2 2 4-4m7 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                                                            : 'M18.364 5.636l-1.414 1.414m-10.607 0L4.93 5.636M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}
                                                     />
                                                 </svg>
                                             )}
