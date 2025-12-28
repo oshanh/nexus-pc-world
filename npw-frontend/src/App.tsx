@@ -73,7 +73,7 @@ const App: React.FC = () => {
           <CartProvider>
             <div className="min-h-screen flex flex-col">
               <Header currentRoute={location.pathname} navigateTo={navigateTo} />
-              <main className="flex-grow">
+              <main className="grow">
                 <Routes>
                   <Route path="/" element={<HomePage onViewDetails={handleViewDetails} navigateTo={navigateTo} />} />
                   <Route path="/products" element={<ProductsPage onViewDetails={handleViewDetails} />} />

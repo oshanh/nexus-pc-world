@@ -4,58 +4,22 @@ import { useProducts } from '../contexts/ProductContext';
 import ProductCard from '../components/ProductCard';
 import type { Product } from '../types';
 import GamingButton from '../components/GamingButton';
+import { categoryService } from '../services/categoryService';
 
-type Category = 'All' | 'Desktop' | 'Normal PC' | 'Middle-End PC' | 'High-End PC' | 'Laptop' | 'Normal Lap' | 'Middle-End Lap' | 'Gaming Lap' | 'Accessory' | 'Cpu' | 'Ram' | 'Storage' | 'VGA' | 'Keyboard' | 'Mouse' | 'Headset' | 'Monitors' | 'Mouse Pads' | 'HDMI Cables';
+type CategoryRecord = {
+  id: string;
+  name: string;
+  subcategories: string[];
+};
 
 interface ProductsPageProps {
   onViewDetails: (product: Product) => void;
 }
 
-const parsePrice = (price: string): number => {
-    return parseFloat(price.replace(/[^0-9.]/g, ''));
-};
-
-const subCategoryDisplayNames: Record<string, string> = {
-    'Normal PC': 'Normal PC',
-    'Middle-End PC': 'Middle-End PC',
-    'High-End PC': 'High-End PC',
-    'Normal Lap': 'Normal Lap',
-    'Middle-End Lap': 'Middle-End Lap',
-    'Gaming Lap': 'Gaming Lap',
-    'Cpu': 'Processors',
-    'Ram': 'RAM',
-    'Storage': 'Storage',
-    'VGA': 'Graphics Cards',
-    'Keyboard': 'Keyboards',
-    'Mouse': 'Mice',
-    'Headset': 'Headsets',
-    'Monitors': 'Monitors',
-    'Mouse Pads': 'Mouse Pads',
-    'HDMI Cables': 'HDMI Cables',
-};
-
-const categoryStructure = [
-  { name: 'All', type: 'single' as const },
-  { 
-    name: 'Desktop', 
-    type: 'parent' as const, 
-    subCategories: ['Normal PC', 'Middle-End PC', 'High-End PC']
-  },
-  { 
-    name: 'Laptop', 
-    type: 'parent' as const, 
-    subCategories: ['Normal Lap', 'Middle-End Lap', 'Gaming Lap']
-  },
-  { 
-    name: 'Accessory', 
-    type: 'parent' as const,
-    subCategories: ['Cpu', 'Ram', 'Storage', 'VGA', 'Keyboard', 'Mouse', 'Headset', 'Monitors', 'Mouse Pads', 'HDMI Cables']
-  }
-];
-
 const FilterPanel: React.FC<{
-    activeCategory: Category;
-    setActiveCategory: (c: Category) => void;
+  categories: CategoryRecord[];
+  activeCategory: string;
+  setActiveCategory: (c: string) => void;
     searchTerm: string;
     setSearchTerm: (s: string) => void;
     expandedCategories: string[];
@@ -65,8 +29,9 @@ const FilterPanel: React.FC<{
     onSuggestionClick: (product: Product) => void;
     searchContainerRef: React.RefObject<HTMLDivElement>;
     isSearching: boolean;
-}> = ({ 
-    activeCategory, setActiveCategory, 
+}> = ({
+  categories,
+  activeCategory, setActiveCategory,
     searchTerm, setSearchTerm, 
     expandedCategories, toggleCategory, 
     onClearFilters, 
@@ -139,64 +104,75 @@ const FilterPanel: React.FC<{
                 </button>
                 {sectionsOpen.category && (
                     <ul className="space-y-1">
-                      {categoryStructure.map(item => {
-                        if (item.type === 'single') {
+                      <li key="All">
+                        <button
+                          onClick={() => setActiveCategory('All')}
+                          className={`w-full text-left py-2 px-3 rounded-md text-sm transition-colors duration-200 ${
+                            activeCategory === 'All' ? 'bg-nexus-blue text-white font-semibold' : 'text-nexus-light hover:bg-nexus-dark'
+                          }`}
+                        >
+                          All Products
+                        </button>
+                      </li>
+
+                      {categories.map((cat) => {
+                        const hasSubs = Array.isArray(cat.subcategories) && cat.subcategories.length > 0;
+
+                        if (!hasSubs) {
                           return (
-                            <li key={item.name}>
-                                <button
-                                  onClick={() => setActiveCategory(item.name as Category)}
-                                  className={`w-full text-left py-2 px-3 rounded-md text-sm transition-colors duration-200 ${
-                                      activeCategory === item.name ? 'bg-nexus-blue text-white font-semibold' : 'text-nexus-light hover:bg-nexus-dark'
-                                  }`}
-                                >
-                                    {item.name === 'All' ? 'All Products' : item.name}
-                                </button>
+                            <li key={cat.id}>
+                              <button
+                                onClick={() => setActiveCategory(cat.name)}
+                                className={`w-full text-left py-2 px-3 rounded-md text-sm transition-colors duration-200 ${
+                                  activeCategory === cat.name ? 'bg-nexus-blue text-white font-semibold' : 'text-nexus-light hover:bg-nexus-dark'
+                                }`}
+                              >
+                                {cat.name}
+                              </button>
                             </li>
                           );
                         }
-                        
-                        if (item.type === 'parent') {
-                            const isExpanded = expandedCategories.includes(item.name);
-                            const mainCategoryName = item.name === 'Accessory' ? item.name + 'ies' : item.name + 's';
-                            return (
-                              <li key={item.name}>
-                                <button
-                                  onClick={() => toggleCategory(item.name)}
-                                  className="w-full flex justify-between items-center text-left py-2 px-3 rounded-md text-sm font-semibold text-nexus-light hover:bg-nexus-dark transition-colors duration-200"
-                                >
-                                  <span>{mainCategoryName}</span>
-                                  <svg className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                                </button>
-                                {isExpanded && (
-                                  <ul className="pt-2 pl-4 space-y-1 border-l border-nexus-purple/20 ml-2">
-                                    <li>
-                                      <button
-                                        onClick={() => setActiveCategory(item.name as Category)}
-                                        className={`w-full text-left py-2 px-3 rounded-md text-sm transition-colors duration-200 ${
-                                          activeCategory === item.name ? 'bg-nexus-blue text-white font-semibold' : 'text-nexus-light hover:bg-nexus-dark'
-                                        }`}
-                                      >
-                                        All {mainCategoryName}
-                                      </button>
-                                    </li>
-                                    {item.subCategories.map(subCat => (
-                                      <li key={subCat}>
-                                        <button
-                                          onClick={() => setActiveCategory(subCat as Category)}
-                                          className={`w-full text-left py-2 px-3 rounded-md text-sm transition-colors duration-200 ${
-                                            activeCategory === subCat ? 'bg-nexus-blue text-white font-semibold' : 'text-nexus-light hover:bg-nexus-dark'
-                                          }`}
-                                        >
-                                          {subCategoryDisplayNames[subCat] || subCat}
-                                        </button>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
-                              </li>
-                            );
-                        }
-                        return null;
+
+                        const isExpanded = expandedCategories.includes(cat.name);
+                        return (
+                          <li key={cat.id}>
+                            <button
+                              onClick={() => toggleCategory(cat.name)}
+                              className="w-full flex justify-between items-center text-left py-2 px-3 rounded-md text-sm font-semibold text-nexus-light hover:bg-nexus-dark transition-colors duration-200"
+                            >
+                              <span>{cat.name}</span>
+                              <svg className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+
+                            {isExpanded && (
+                              <ul className="pt-2 pl-4 space-y-1 border-l border-nexus-purple/20 ml-2">
+                                <li>
+                                  <button
+                                    onClick={() => setActiveCategory(cat.name)}
+                                    className={`w-full text-left py-2 px-3 rounded-md text-sm transition-colors duration-200 ${
+                                      activeCategory === cat.name ? 'bg-nexus-blue text-white font-semibold' : 'text-nexus-light hover:bg-nexus-dark'
+                                    }`}
+                                  >
+                                    All {cat.name}
+                                  </button>
+                                </li>
+
+                                {cat.subcategories.map((sub) => (
+                                  <li key={sub}>
+                                    <button
+                                      onClick={() => setActiveCategory(sub)}
+                                      className={`w-full text-left py-2 px-3 rounded-md text-sm transition-colors duration-200 ${
+                                        activeCategory === sub ? 'bg-nexus-blue text-white font-semibold' : 'text-nexus-light hover:bg-nexus-dark'
+                                      }`}
+                                    >
+                                      {sub}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        );
                       })}
                     </ul>
                 )}
@@ -219,7 +195,9 @@ const FilterPanel: React.FC<{
 
 const ProductsPage: React.FC<ProductsPageProps> = ({ onViewDetails }) => {
   const { products } = useProducts();
-  const [activeCategory, setActiveCategory] = useState<Category>('All');
+  const [categories, setCategories] = useState<CategoryRecord[]>([]);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   
@@ -228,6 +206,22 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ onViewDetails }) => {
   const [isFiltering, setIsFiltering] = useState(false);
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const res = await categoryService.getCategories();
+        const loaded = Array.isArray(res?.categories) ? res.categories : [];
+        setCategories(loaded);
+        setCategoriesError(null);
+      } catch (err) {
+        console.error(err);
+        setCategories([]);
+        setCategoriesError('Failed to load categories');
+      }
+    };
+    loadCategories();
+  }, []);
 
   // Debounce search term
   useEffect(() => {
@@ -264,7 +258,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ onViewDetails }) => {
         .filter(p => 
             p.name.toLowerCase().includes(lowerValue) || 
             p.category.toLowerCase().includes(lowerValue) ||
-            (p.subCategory && p.subCategory.toLowerCase().includes(lowerValue))
+            p.subCategory?.toLowerCase().includes(lowerValue)
         )
         .slice(0, 5);
       setSuggestions(filteredSuggestions);
@@ -297,15 +291,17 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ onViewDetails }) => {
     setSuggestions([]);
   });
 
+  const categoryNameSet = useMemo(() => new Set(categories.map(c => c.name)), [categories]);
+
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = products;
 
     // Category Filter
     if (activeCategory !== 'All') {
-        if (activeCategory === 'Desktop' || activeCategory === 'Laptop' || activeCategory === 'Accessory') {
-            filtered = filtered.filter(p => p.category === activeCategory);
-        } else { // Handle sub-categories
-            filtered = filtered.filter(p => p.subCategory === activeCategory);
+        if (categoryNameSet.has(activeCategory)) {
+          filtered = filtered.filter(p => p.category === activeCategory);
+        } else {
+          filtered = filtered.filter(p => p.subCategory === activeCategory);
         }
     }
 
@@ -320,7 +316,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ onViewDetails }) => {
     }
 
     return filtered;
-  }, [activeCategory, debouncedSearchTerm, products]);
+  }, [activeCategory, categoryNameSet, debouncedSearchTerm, products]);
 
   return (
     <section className="py-20 min-h-screen">
@@ -337,6 +333,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ onViewDetails }) => {
           <aside className="hidden lg:block lg:col-span-1">
             <div className={`sticky top-24 bg-nexus-gray p-6 rounded-lg border border-nexus-purple/20 transition-all duration-300 ${isFiltering ? 'opacity-50 pointer-events-none' : ''}`}>
                 <FilterPanel 
+                    categories={categories}
                     activeCategory={activeCategory}
                     setActiveCategory={handleFilterChange(setActiveCategory)}
                     searchTerm={searchTerm}
@@ -349,6 +346,9 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ onViewDetails }) => {
                     searchContainerRef={searchContainerRef}
                     isSearching={isSearching}
                 />
+                {categoriesError && (
+                  <p className="mt-4 text-xs text-red-400">{categoriesError}</p>
+                )}
             </div>
           </aside>
 
@@ -375,6 +375,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ onViewDetails }) => {
                     </div>
                     <div className={`transition-opacity duration-300 ${isFiltering ? 'opacity-50 pointer-events-none' : ''}`}>
                         <FilterPanel
+                          categories={categories}
                             activeCategory={activeCategory}
                             setActiveCategory={(c) => { 
                                 handleFilterChange(setActiveCategory)(c); 
