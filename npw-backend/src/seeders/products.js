@@ -1,4 +1,5 @@
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
 const connectDB = require('../config/mongodb');
 const Product = require('../models/Product');
 
@@ -11,7 +12,7 @@ const products = [
     subCategory: 'Gaming Lap',
     shortDescription: 'Top-tier performance with RTX 4070 and Ryzen 9 processor.',
     description: 'The Helios Prime is our flagship gaming desktop, engineered for the enthusiast who demands nothing but the best. Experience breathtaking 4K gaming, seamless streaming, and lightning-fast content creation, all powered by the latest generation of components.',
-    price: 'Rs 1,049,700',
+    price: 1049700,
     stock: 5,
     imageUrls: [
         'https://dlcdnwebimgs.asus.com/gain/8b25250f-bf55-425f-93bd-b5d8e2744b3e/',
@@ -34,7 +35,7 @@ const products = [
     subCategory: 'Middle-End Lap',
     shortDescription: 'Push the limits with expertly overclocked components.',
     description: 'Built for those who live on the edge, the Orion X-Treme comes professionally overclocked and stress-tested for maximum stable performance. Squeeze every last frame out of your favorite titles with this finely-tuned beast.',
-    price: 'Rs 839,700',
+    price: 839700,
     stock: 8,
     imageUrls: [
         'https://p1-ofp.static.pub//fes/cms/2024/05/20/2adx3swjr6461psulmwqrx6l0bkaab759083.png',
@@ -57,7 +58,7 @@ const products = [
     subCategory: 'VGA',
     shortDescription: 'High-performance 1440p gaming with DLSS 3 technology.',
     description: 'The GeForce RTX 4070 is a quantum leap in performance for 1440p gaming. Powered by the NVIDIA Ada Lovelace architecture, it brings new levels of visual fidelity with AI-powered DLSS 3 and full ray tracing capabilities for the most immersive worlds.',
-    price: 'Rs 219,700',
+    price: 219700,
     stock: 15,
     imageUrls: [
         'https://gamersnexus.net/u/2024-01/vlcsnap-2024-01-25-16h12m35s203.jpg',
@@ -79,7 +80,7 @@ const products = [
     subCategory: 'High-End PC',
     shortDescription: 'Desktop-grade power in a sleek, portable design.',
     description: 'Who says you can\'t take it with you? The Blade Pro packs the punch of a full-sized desktop into a stunning, thin-and-light chassis. Its high-refresh-rate QHD display brings games to life wherever you are.',
-    price: 'Rs 749,700',
+    price: 749700,
     stock: 3,
     imageUrls: [
         'https://static.vecteezy.com/system/resources/thumbnails/054/720/484/small/gaming-pc-on-white-background-on-transparent-background-png.png',
@@ -102,7 +103,7 @@ const products = [
     subCategory: 'Gaming Lap',
     shortDescription: 'Thin, light, and powerful for gaming on the go.',
     description: 'The StealthBook Ultra is the ultimate travel companion for the discerning gamer. It combines a vibrant OLED display with an efficient yet powerful component selection to deliver an incredible gaming experience in an unbelievably portable package.',
-    price: 'Rs 569,700',
+    price: 569700,
     stock: 12,
     imageUrls: [
         'https://my-store.msi.com/cdn/shop/files/Thin15B12UX_3.png?v=1749804463&width=1214',
@@ -125,7 +126,7 @@ const products = [
     subCategory: 'Keyboard',
     shortDescription: 'Mechanical keys with customizable per-key RGB lighting.',
     description: 'Gain a competitive edge with the CyberMech keyboard. Featuring tactile mechanical switches for lightning-fast response, a durable aluminum frame, and brilliant, fully customizable per-key RGB lighting to match your setup.',
-    price: 'Rs 44,700',
+    price: 44700,
     stock: 25,
     imageUrls: [
         'https://redragon.com/cdn/shop/files/RedragonK633CGO-RGB68-KeyCompactMechanicalGamingKeyboard_1_1_-Photoroom.png?v=1725356340',
@@ -147,7 +148,7 @@ const products = [
     subCategory: 'Headset',
     shortDescription: 'Crystal-clear 7.1 surround sound with zero lag.',
     description: 'Immerse yourself in the game with the Void Wireless Headset. Pinpoint enemy locations with virtual 7.1 surround sound, communicate clearly with a broadcast-quality microphone, and enjoy lag-free audio for hours on a single charge.',
-    price: 'Rs 38,700',
+    price: 38700,
     stock: 30,
     imageUrls: [
         'https://bavin.ph/cdn/shop/files/4_52847082-21e4-426d-9e8f-82ccba991286.png?v=1753076193&width=493',
@@ -169,7 +170,7 @@ const products = [
     subCategory: 'Mouse',
     shortDescription: 'Lightweight design with a high-precision 25K DPI sensor.',
     description: 'Experience flawless tracking and feather-light control with the Photon Pro. Its ergonomic, aultra-lightweight design reduces fatigue, while the state-of-the-art optical sensor ensures every movement translates to perfect in-game precision.',
-    price: 'Rs 26,700',
+    price: 26700,
     stock: 45,
     imageUrls: [
         'https://www.meetion.com/lifisher-1658459652651/jpg80-t3-scale100.webp',
@@ -191,7 +192,7 @@ const products = [
     subCategory: 'Normal PC',
     shortDescription: 'Your perfect entry into high-FPS 1080p gaming.',
     description: 'The Vanguard is the ideal starting point for serious PC gaming. It delivers excellent performance in the most popular esports and AAA titles at 1080p resolution, with a clear upgrade path for the future.',
-    price: 'Rs 399,700',
+    price: 399700,
     stock: 10,
     imageUrls: [
         'https://5.imimg.com/data5/SELLER/Default/2025/8/540230892/FT/QT/YV/251969637/desktop-pc-png-pic-background-png-500x500.png',
@@ -214,7 +215,7 @@ const products = [
     subCategory: 'Monitors',
     shortDescription: 'Dominate the battlefield with smooth 1440p performance.',
     description: 'Step up your game with the Aegis Sentinel. This build is perfectly balanced for high-refresh-rate gaming at 1440p, providing a competitive edge with stunning visual fidelity and responsive gameplay.',
-    price: 'Rs 66,500',
+    price: 66500,
     stock: 18,
     imageUrls: [
         'https://cdn.sanity.io/images/yqd1zell/production/f384a62bb0e81f2fb3a0e3e2e8db563207f33ec6-500x500.png',
@@ -233,25 +234,43 @@ const products = [
 ];
 
 const seedDB = async () => {
+  let inserted = 0;
+  let skipped = 0;
+  let failed = 0;
+
   try {
     await connectDB();
 
-    // Upsert products: do not delete existing products; avoid duplicates by product name
-    const ops = products.map(p => ({
-      updateOne: {
-        filter: { name: p.name },
-        update: { $setOnInsert: p },
-        upsert: true
+    for (const product of products) {
+      // eslint-disable-next-line no-await-in-loop
+      const existing = await Product.findOne({ name: product.name }).select('_id').lean();
+      if (existing) {
+        skipped += 1;
+        continue;
       }
-    }));
 
-    const result = await Product.bulkWrite(ops);
-    console.log(`Products upsert result: inserted ${result.upsertedCount || 0}, modified ${result.modifiedCount || 0}, matched ${result.matchedCount || 0}`);
+      try {
+        // Triggers Product pre('validate') to generate code.
+        // eslint-disable-next-line no-await-in-loop
+        await Product.create(product);
+        inserted += 1;
+      } catch (err) {
+        failed += 1;
+        console.error(`Failed to seed product "${product.name}":`, err?.message || err);
+      }
+    }
 
-    process.exit(0);
+    console.log(`Products seed complete: inserted ${inserted}, skipped ${skipped}, failed ${failed}`);
+    if (failed > 0) process.exitCode = 1;
   } catch (err) {
     console.error(err);
-    process.exit(1);
+    process.exitCode = 1;
+  } finally {
+    try {
+      await mongoose.disconnect();
+    } catch {
+      // ignore
+    }
   }
 };
 

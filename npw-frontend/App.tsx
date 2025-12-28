@@ -1,89 +1,66 @@
 
 import React, { useState, useEffect } from 'react';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import ProductModal from './components/ProductModal';
-import { CartProvider } from './contexts/CartContext';
-import { WishlistProvider } from './contexts/WishlistContext';
-import { AuthProvider } from './contexts/AuthContext';
-import { ProductProvider } from './contexts/ProductContext';
-import type { Product } from './types';
-import HomePage from './pages/HomePage';
-import ProductsPage from './pages/ProductsPage';
-import CustomBuildPage from './pages/CustomBuildPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
-import CartPage from './pages/CartPage';
-import WishlistPage from './pages/WishlistPage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import AdminPage from './pages/AdminPage';
-import GamingButton from './components/GamingButton';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import Header from './src/components/Header';
+import Footer from './src/components/Footer';
+import ProductModal from './src/components/ProductModal';
+import { CartProvider } from './src/contexts/CartContext';
+import { WishlistProvider } from './src/contexts/WishlistContext';
+import { AuthProvider } from './src/contexts/AuthContext';
+import { ProductProvider } from './src/contexts/ProductContext';
+import type { Product } from './src/types';
+import HomePage from './src/pages/HomePage';
+import ProductsPage from './src/pages/ProductsPage';
+import CustomBuildPage from './src/pages/CustomBuildPage';
+import AboutPage from './src/pages/AboutPage';
+import ContactPage from './src/pages/ContactPage';
+import CartPage from './src/pages/CartPage';
+import WishlistPage from './src/pages/WishlistPage';
+import LoginPage from './src/pages/LoginPage';
+import SignupPage from './src/pages/SignupPage';
+import AdminPage from './src/pages/admin/AdminProducts';
+import GamingButton from './src/components/GamingButton';
+
+const NotFound: React.FC = () => (
+  <section className="py-20 min-h-screen flex items-center justify-center">
+    <div className="text-center">
+      <h1 className="text-4xl font-exo font-bold text-white mb-4">Page not found</h1>
+      <p className="text-gray-400">The link you followed doesn’t exist.</p>
+    </div>
+  </section>
+);
 
 const App: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [route, setRoute] = useState('#/');
   const [isScrollButtonVisible, setIsScrollButtonVisible] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const toggleVisibility = () => {
-      if (window.scrollY > 300) {
-        setIsScrollButtonVisible(true);
-      } else {
-        setIsScrollButtonVisible(false);
-      }
+      setIsScrollButtonVisible(window.scrollY > 300);
     };
 
     window.addEventListener('scroll', toggleVisibility);
-
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
+  useEffect(() => {
+    // Scroll to top on route change
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const navigateTo = (path: string) => {
-    setRoute(path);
-    window.scrollTo(0, 0); // Scroll to top on page change
+    const cleaned = path.startsWith('#') ? path.slice(1) : path;
+    navigate(cleaned);
   };
 
-  const handleViewDetails = (product: Product) => {
-    setSelectedProduct(product);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedProduct(null);
-  };
-
-  const renderPage = () => {
-    switch (route) {
-      case '#/products':
-        return <ProductsPage onViewDetails={handleViewDetails} />;
-      case '#/custom-build':
-        return <CustomBuildPage />;
-      case '#/about':
-        return <AboutPage />;
-      case '#/contact':
-        return <ContactPage />;
-      case '#/wishlist':
-        return <WishlistPage onViewDetails={handleViewDetails} navigateTo={navigateTo} />;
-      case '#/cart':
-        return <CartPage navigateTo={navigateTo} />;
-      case '#/login':
-        return <LoginPage navigateTo={navigateTo} />;
-      case '#/signup':
-        return <SignupPage navigateTo={navigateTo} />;
-      case '#/admin':
-        return <AdminPage navigateTo={navigateTo} />;
-      case '#/':
-      default:
-        return <HomePage onViewDetails={handleViewDetails} navigateTo={navigateTo} />;
-    }
-  };
+  const handleViewDetails = (product: Product) => setSelectedProduct(product);
+  const handleCloseModal = () => setSelectedProduct(null);
 
   return (
     <AuthProvider>
@@ -91,28 +68,40 @@ const App: React.FC = () => {
         <WishlistProvider>
           <CartProvider>
             <div className="min-h-screen flex flex-col">
-              <Header currentRoute={route} navigateTo={navigateTo} />
+              <Header currentRoute={location.pathname} navigateTo={navigateTo} />
               <main className="flex-grow">
-                {renderPage()}
+                <Routes>
+                  <Route path="/" element={<HomePage onViewDetails={handleViewDetails} navigateTo={navigateTo} />} />
+                  <Route path="/products" element={<ProductsPage onViewDetails={handleViewDetails} />} />
+                  <Route path="/custom-build" element={<CustomBuildPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/wishlist" element={<WishlistPage onViewDetails={handleViewDetails} navigateTo={navigateTo} />} />
+                  <Route path="/cart" element={<CartPage navigateTo={navigateTo} />} />
+                  <Route path="/login" element={<LoginPage navigateTo={navigateTo} />} />
+                  <Route path="/signup" element={<SignupPage navigateTo={navigateTo} />} />
+                  <Route path="/admin" element={<AdminPage navigateTo={navigateTo} />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
               </main>
               <Footer navigateTo={navigateTo} />
               {selectedProduct && (
                 <ProductModal product={selectedProduct} onClose={handleCloseModal} />
               )}
-              
+
               <div className={`fixed bottom-8 right-8 z-50 transition-opacity duration-300 ${isScrollButtonVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                  <GamingButton
-                      onClick={scrollToTop}
-                      variant="primary"
-                      size="md"
-                      iconOnly={true}
-                      shape="circular"
-                      aria-label="Scroll to top"
-                  >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                      </svg>
-                  </GamingButton>
+                <GamingButton
+                  onClick={scrollToTop}
+                  variant="primary"
+                  size="md"
+                  iconOnly={true}
+                  shape="circular"
+                  aria-label="Scroll to top"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                  </svg>
+                </GamingButton>
               </div>
 
             </div>

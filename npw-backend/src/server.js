@@ -5,6 +5,8 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/mongodb');
 const productRoutes = require('./routes/productRoutes');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 const csrfProtection = require('./middleware/csrfMiddleware');
 
 dotenv.config();
@@ -25,6 +27,8 @@ app.use(express.json());
 // Routes
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // CSRF token endpoint (clients fetch this to get a valid token/cookie)
 app.get('/api/csrf-token', csrfProtection, (req, res) => {

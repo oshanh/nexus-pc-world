@@ -1,0 +1,15 @@
+import type { Product } from '../../../types';
+
+export type AdminProductsTab = 'list' | 'inactive' | 'form' | 'categories';
+
+export type Category = {
+    id: string;
+    name: string;
+    subcategories: string[];
+};
+
+export type ProductFormState = Omit<Partial<Product>, 'price' | 'category' | 'subCategory'> & {
+    price: string;
+    category: string;
+    subCategory: string;
+};

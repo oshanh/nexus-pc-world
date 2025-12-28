@@ -31,7 +31,7 @@ const signup = async (req, res) => {
 				maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 			});
 
-			res.status(201).json({ token, user: { id: user._id.toString(), username: user.username, email: user.email, role: user.role } });
+			res.status(201).json({ user: { id: user._id.toString(), username: user.username, email: user.email, role: user.role } });
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ message: 'Server error' });
@@ -58,9 +58,10 @@ const login = async (req, res) => {
 			sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
 			secure: process.env.NODE_ENV === 'production',
 			maxAge: 7 * 24 * 60 * 60 * 1000
+			
 		});
 
-		res.json({ token, user: { id: user._id.toString(), username: user.username, email: user.email, role: user.role } });
+		res.json({ user: { id: user._id.toString(), username: user.username, email: user.email, role: user.role } });
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ message: 'Server error' });

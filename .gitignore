@@ -27,3 +27,5 @@ logs/
 *.njsproj
 *.sln
 *.sw?
+
+ToDo.txt

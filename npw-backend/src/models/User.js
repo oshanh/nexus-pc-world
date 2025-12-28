@@ -17,9 +17,29 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
+    enum: ['customer', 'admin'],
+    default: 'customer'
   }
+  ,
+  cart: [{
+    id: String,
+    name: String,
+    price: String,
+    imageUrls: [String],
+    quantity: { type: Number, default: 1 }
+  }],
+  wishlist: [{
+    id: String,
+    name: String,
+    price: String,
+    imageUrls: [String]
+  }],
+  orders: [{
+    id: String,
+    items: [{ id: String, name: String, price: String, quantity: Number }],
+    total: Number,
+    createdAt: Date
+  }]
 }, {
   timestamps: true
 });
