@@ -3,6 +3,7 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { userService } from '../services/userService';
 import GamingButton from '../components/GamingButton';
+import Toast from '../components/Toast';
 import type { CartItem } from '../types';
 
 const parsePrice = (price: string | number): number => {
@@ -28,6 +29,89 @@ interface ConfirmedOrder {
     total: number;
     orderNumber: string;
 }
+
+interface ShippingDetails {
+    fullName: string;
+    phone: string;
+    address: string;
+    note: string;
+}
+
+const isShippingValid = (shipping: ShippingDetails): boolean => {
+    return !!shipping.fullName.trim() && !!shipping.phone.trim() && !!shipping.address.trim();
+};
+
+const ShippingDetailsView: React.FC<{
+    shipping: ShippingDetails;
+    onChange: (next: ShippingDetails) => void;
+    onBack: () => void;
+    onPlaceOrder: () => void;
+    isProcessing: boolean;
+}> = ({ shipping, onChange, onBack, onPlaceOrder, isProcessing }) => (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="lg:col-span-2 space-y-6">
+            <div className="bg-nexus-dark/50 p-6 rounded-lg border border-nexus-gray">
+                <h2 className="text-2xl font-exo font-bold text-white mb-2">Shipping Details</h2>
+                <p className="text-gray-400 mb-6">Confirm your delivery information for this order.</p>
+
+                <div className="space-y-4">
+                    <div>
+                        <label htmlFor="shipping-full-name" className="block text-sm text-gray-400 mb-1">Full Name</label>
+                        <input
+                            id="shipping-full-name"
+                            value={shipping.fullName}
+                            onChange={(e) => onChange({ ...shipping, fullName: e.target.value })}
+                            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="shipping-phone" className="block text-sm text-gray-400 mb-1">Phone Number</label>
+                        <input
+                            id="shipping-phone"
+                            value={shipping.phone}
+                            onChange={(e) => onChange({ ...shipping, phone: e.target.value })}
+                            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="shipping-address" className="block text-sm text-gray-400 mb-1">Address</label>
+                        <textarea
+                            id="shipping-address"
+                            value={shipping.address}
+                            onChange={(e) => onChange({ ...shipping, address: e.target.value })}
+                            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white min-h-24"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="shipping-note" className="block text-sm text-gray-400 mb-1">Note (optional)</label>
+                        <textarea
+                            id="shipping-note"
+                            value={shipping.note}
+                            onChange={(e) => onChange({ ...shipping, note: e.target.value })}
+                            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white min-h-20"
+                        />
+                    </div>
+
+                    <div className="flex gap-4">
+                        <GamingButton onClick={onBack} variant="secondary" disabled={isProcessing}>Back</GamingButton>
+                        <GamingButton onClick={onPlaceOrder} variant="cta" disabled={isProcessing}>
+                            {isProcessing ? 'Processing...' : 'Place Order'}
+                        </GamingButton>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div className="lg:col-span-1">
+            <div className="bg-nexus-dark p-6 rounded-lg sticky top-24 border border-nexus-gray">
+                <h2 className="text-xl font-exo font-bold text-white mb-4">Shipping Requirements</h2>
+                <p className="text-gray-400 text-sm">Full name, phone number, and address are required to place the order.</p>
+            </div>
+        </div>
+    </div>
+);
 
 const OrderConfirmation: React.FC<{ order: ConfirmedOrder; navigateTo: (path: string) => void; }> = ({ order, navigateTo }) => (
     <div className="text-center bg-nexus-dark/50 p-8 sm:p-12 rounded-lg border border-nexus-gray max-w-2xl mx-auto">
@@ -63,16 +147,17 @@ const OrderConfirmation: React.FC<{ order: ConfirmedOrder; navigateTo: (path: st
 
 const CartItemRow: React.FC<{
     product: CartItem;
-    onUpdateQuantity: (id: number, qty: number) => void;
-    onRemove: (id: number) => void;
-}> = ({ product, onUpdateQuantity, onRemove }) => {
+    onIncrease: (id: string) => void;
+    onDecrease: (id: string) => void;
+    onRemove: (id: string) => void;
+}> = ({ product, onIncrease, onDecrease, onRemove }) => {
     const firstImageUrl = product.imageUrls?.find((u) => u?.trim());
 
     return (
         <div className="bg-nexus-dark p-4 rounded-lg md:grid md:grid-cols-12 md:gap-4 md:items-center border border-nexus-gray/50">
         {/* Product Info */}
         <div className="md:col-span-5 flex items-center gap-4">
-            <div className="w-20 h-20 flex-shrink-0">
+            <div className="w-20 h-20 shrink-0">
                 {firstImageUrl ? (
                     <img
                         src={firstImageUrl}
@@ -101,9 +186,9 @@ const CartItemRow: React.FC<{
         <div className="mt-4 md:mt-0 md:col-span-3 flex justify-between md:justify-center items-center">
              <span className="md:hidden text-gray-400 font-bold">Quantity</span>
             <div className="flex items-center">
-                <GamingButton onClick={() => onUpdateQuantity(Number(product.id), product.quantity - 1)} size="sm" iconOnly={true} className="!h-8 !w-8">-</GamingButton>
+                <GamingButton onClick={() => onDecrease(product.id)} size="sm" iconOnly={true} className="h-8! w-8!">-</GamingButton>
                 <span className="w-12 text-center font-bold text-white text-lg">{product.quantity}</span>
-                <GamingButton onClick={() => onUpdateQuantity(Number(product.id), product.quantity + 1)} size="sm" iconOnly={true} className="!h-8 !w-8">+</GamingButton>
+                <GamingButton onClick={() => onIncrease(product.id)} size="sm" iconOnly={true} className="h-8! w-8!">+</GamingButton>
             </div>
         </div>
 
@@ -112,7 +197,7 @@ const CartItemRow: React.FC<{
             <span className="md:hidden text-gray-400 font-bold">Total</span>
             <div className="flex items-center gap-4">
                 <span className="font-mono font-bold text-white">Rs {(parsePrice(product.price) * product.quantity).toLocaleString()}</span>
-                <GamingButton onClick={() => onRemove(Number(product.id))} iconOnly={true} size="sm" variant="danger" aria-label={`Remove ${product.name} from cart`}>
+                <GamingButton onClick={() => onRemove(product.id)} iconOnly={true} size="sm" variant="danger" aria-label={`Remove ${product.name} from cart`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                 </GamingButton>
             </div>
@@ -165,27 +250,32 @@ const OrderSummary: React.FC<{
 );
 
 const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateTo }) => {
-    const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
+    const { cartItems, increaseQuantity, decreaseQuantity, removeFromCart, cartTotal, clearCart } = useCart();
     
-    type CheckoutState = 'cart' | 'processing' | 'confirmed';
+    type CheckoutState = 'cart' | 'shipping' | 'confirmed';
     const [checkoutState, setCheckoutState] = useState<CheckoutState>('cart');
+    const [isProcessing, setIsProcessing] = useState(false);
     const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
+    const [shippingDetails, setShippingDetails] = useState<ShippingDetails>({ fullName: '', phone: '', address: '', note: '' });
+    const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
+        visible: false,
+        message: '',
+        type: 'success',
+    });
 
     const { user } = useAuth();
 
-    const handleCheckout = () => {
+    const showToast = (type: 'success' | 'error', message: string, timeoutMs: number = 3000) => {
+        setToast({ visible: true, type, message });
+        globalThis.setTimeout(() => setToast(prev => ({ ...prev, visible: false })), timeoutMs);
+    };
+
+    const handleProceedToCheckout = () => {
         (async () => {
-            setCheckoutState('processing');
             try {
-                if (user?.id) {
-                    // Authenticated: create order server-side
-                    const res = await userService.createOrder({ items: cartItems, total: cartTotal });
-                    const order = res?.order || { id: `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
-                    setConfirmedOrder({ items: cartItems, total: cartTotal, orderNumber: order.id });
-                    // server-side createOrder clears cart; still ensure local state cleared
-                    await clearCart();
-                } else {
-                    // Guest: fallback to local persistence
+                if (!user?.id) {
+                    // Guest: keep existing local checkout behavior
+                    setIsProcessing(true);
                     await new Promise((r) => setTimeout(r, 1200));
                     const orderNumber = `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
                     setConfirmedOrder({ items: cartItems, total: cartTotal, orderNumber });
@@ -199,11 +289,60 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
                         console.warn('Failed to persist order', err);
                     }
                     clearCart();
+                    setCheckoutState('confirmed');
+                    setIsProcessing(false);
+                    return;
                 }
-                setCheckoutState('confirmed');
-            } catch (err) {
-                console.warn('Checkout failed', err);
+
+                setIsProcessing(true);
+
+                const res = await userService.getAccount();
+                const delivery = (res?.account?.deliveryInfo || {}) as Partial<ShippingDetails>;
+                const next: ShippingDetails = {
+                    fullName: String(delivery.fullName ?? ''),
+                    phone: String(delivery.phone ?? ''),
+                    address: String(delivery.address ?? ''),
+                    note: String(delivery.note ?? ''),
+                };
+
+                setShippingDetails(next);
+                setCheckoutState('shipping');
+                setIsProcessing(false);
+            } catch (err: any) {
+                console.warn('Failed to load delivery info', err);
+                showToast('error', err?.message || 'Failed to load delivery info. Please try again.');
                 setCheckoutState('cart');
+                setIsProcessing(false);
+            }
+        })();
+    };
+
+    const handlePlaceOrder = () => {
+        (async () => {
+            try {
+                if (!user?.id) return;
+
+                if (!isShippingValid(shippingDetails)) {
+                    showToast('error', 'Please fill full name, phone number, and address.', 3500);
+                    return;
+                }
+
+                setIsProcessing(true);
+                const res = await userService.createOrder({
+                    items: cartItems,
+                    total: cartTotal,
+                    shipping: shippingDetails,
+                });
+                const order = res?.order || { id: `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
+                setConfirmedOrder({ items: cartItems, total: cartTotal, orderNumber: order.id });
+                await clearCart();
+                setCheckoutState('confirmed');
+                setIsProcessing(false);
+            } catch (err: any) {
+                console.warn('Checkout failed', err);
+                showToast('error', err?.message || 'Checkout failed. Please try again.');
+                setCheckoutState('shipping');
+                setIsProcessing(false);
             }
         })();
     };
@@ -230,35 +369,47 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
 
     return (
         <section className="py-20 min-h-[80vh]">
+            <Toast message={toast.message} type={toast.type} visible={toast.visible} />
             <div className="container mx-auto px-6">
                 <h1 className="text-4xl font-exo text-center font-bold mb-12">Shopping Cart</h1>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                    {/* Cart Items List */}
-                    <div className="lg:col-span-2 space-y-4">
-                       {/* Header */}
-                       <div className="hidden md:grid grid-cols-12 gap-4 text-sm font-bold uppercase text-gray-500 px-4">
-                           <div className="col-span-5">Product</div>
-                           <div className="col-span-2 text-center">Price</div>
-                           <div className="col-span-3 text-center">Quantity</div>
-                           <div className="col-span-2 text-right">Total</div>
-                       </div>
-                      {cartItems.map((product) => (
-                        <CartItemRow
-                            key={product.id}
-                            product={product}
-                            onUpdateQuantity={(id, qty) => updateQuantity(String(id), qty)}
-                            onRemove={(id) => removeFromCart(String(id))}
-                        />
-                      ))}
-                    </div>
-                    {/* Order Summary */}
-                    <OrderSummary
-                        total={cartTotal}
-                        onClearCart={clearCart}
-                        onCheckout={handleCheckout}
-                        isProcessing={checkoutState === 'processing'}
+                {checkoutState === 'shipping' ? (
+                    <ShippingDetailsView
+                        shipping={shippingDetails}
+                        onChange={setShippingDetails}
+                        onBack={() => setCheckoutState('cart')}
+                        onPlaceOrder={handlePlaceOrder}
+                        isProcessing={isProcessing}
                     />
-                </div>
+                ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                        {/* Cart Items List */}
+                        <div className="lg:col-span-2 space-y-4">
+                        {/* Header */}
+                        <div className="hidden md:grid grid-cols-12 gap-4 text-sm font-bold uppercase text-gray-500 px-4">
+                            <div className="col-span-5">Product</div>
+                            <div className="col-span-2 text-center">Price</div>
+                            <div className="col-span-3 text-center">Quantity</div>
+                            <div className="col-span-2 text-right">Total</div>
+                        </div>
+                        {cartItems.map((product) => (
+                            <CartItemRow
+                                key={product.id}
+                                product={product}
+                                onIncrease={(id) => increaseQuantity(id)}
+                                onDecrease={(id) => decreaseQuantity(id)}
+                                onRemove={(id) => removeFromCart(id)}
+                            />
+                        ))}
+                        </div>
+                        {/* Order Summary */}
+                        <OrderSummary
+                            total={cartTotal}
+                            onClearCart={clearCart}
+                            onCheckout={handleProceedToCheckout}
+                            isProcessing={isProcessing}
+                        />
+                    </div>
+                )}
             </div>
         </section>
     );

@@ -88,7 +88,7 @@ const App: React.FC = () => {
                   <Route path="/admin/products" element={<AdminProducts navigateTo={navigateTo} />} />
                   <Route path="/admin/users" element={<AdminUsers />} />
                   <Route path="/admin/orders" element={<AdminOrders />} />
-                  <Route path="/account" element={<CustomerDashboard navigateTo={navigateTo} />} />
+                  <Route path="/account/*" element={<CustomerDashboard navigateTo={navigateTo} />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>

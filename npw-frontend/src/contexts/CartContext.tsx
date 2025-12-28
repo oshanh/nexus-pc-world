@@ -7,7 +7,8 @@ interface CartContextType {
   cartItems: CartItem[];
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  increaseQuantity: (productId: string, amount?: number) => void;
+  decreaseQuantity: (productId: string, amount?: number) => void;
   clearCart: () => Promise<void>;
   cartCount: number;
   cartTotal: number;
@@ -67,7 +68,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (mounted) setCartItems(merged);
         // Persist merged cart server-side and clear guest localStorage
         try {
-          await userService.updateCart(merged);
+          await userService.setCart(merged);
           localStorage.removeItem(storageKey(null));
         } catch (err) {
           console.warn('Failed to persist merged cart to server', err);
@@ -108,6 +109,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Authenticated: perform server-side add and use server result
     try {
       const res = await userService.addCartItem({ ...product, quantity: 1 });
+      console.log('addCartItem response:', res);
       const updated = res?.cart ?? [];
       setCartItems(updated);
     } catch (err) {
@@ -121,7 +123,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     try {
-      const res = await userService.removeCartItem(productId);
+      const res = await userService.deleteCartItem(productId);
       const updated = res?.cart ?? [];
       setCartItems(updated);
     } catch (err) {
@@ -129,29 +131,46 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateQuantity = async (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      await removeFromCart(productId);
-      return;
-    }
+  const increaseQuantity = async (productId: string, amount: number = 1) => {
+    const delta = Math.max(1, Number(amount) || 1);
 
     if (!user?.id) {
-      setCartItems(prevItems =>
-        prevItems.map(item =>
-          item.id === productId ? { ...item, quantity } : item
+      setCartItems((prevItems) =>
+        prevItems.map((item) =>
+          item.id === productId ? { ...item, quantity: item.quantity + delta } : item
         )
       );
       return;
     }
 
-    // For authenticated users, update full cart on server
     try {
-      const newItems = cartItems.map(item => item.id === productId ? { ...item, quantity } : item);
-      const res = await userService.updateCart(newItems);
+      const res = await userService.increaseCartItemQuantity(productId, delta);
       const updated = res?.cart ?? [];
       setCartItems(updated);
     } catch (err) {
-      console.warn('Failed to update cart quantity on server', err);
+      console.warn('Failed to increase quantity on server', err);
+    }
+  };
+
+  const decreaseQuantity = async (productId: string, amount: number = 1) => {
+    const delta = Math.max(1, Number(amount) || 1);
+
+    if (!user?.id) {
+      setCartItems((prevItems) => {
+        const next = prevItems
+          .map((item) => (item.id === productId ? { ...item, quantity: item.quantity - delta } : item))
+          .filter((item) => item.quantity > 0);
+        return next;
+      });
+      return;
+    }
+
+    try {
+      const res = await userService.decreaseCartItemQuantity(productId, delta);
+      const updated = res?.cart ?? [];
+      setCartItems(updated);
+    } catch (err) {
+      console.warn('Failed to decrease quantity on server', err);
     }
   };
 
@@ -161,7 +180,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     try {
-      const res = await userService.updateCart([]);
+      const res = await userService.setCart([]);
       const updated = res?.cart ?? [];
       setCartItems(updated);
     } catch (err) {
@@ -176,7 +195,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       cartItems,
       addToCart,
       removeFromCart,
-      updateQuantity,
+      increaseQuantity,
+      decreaseQuantity,
       clearCart,
       cartCount,
       cartTotal,

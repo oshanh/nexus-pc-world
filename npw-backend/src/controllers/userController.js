@@ -1,60 +1,5 @@
 const User = require('../models/User');
 
-const getCart = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('cart');
-    return res.json({ cart: user?.cart || [] });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: 'Failed to load cart' });
-  }
-};
-
-const updateCart = async (req, res) => {
-  try {
-    const { items } = req.body;
-    const user = await User.findById(req.user.id);
-    user.cart = Array.isArray(items) ? items : [];
-    await user.save();
-    return res.json({ cart: user.cart });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: 'Failed to update cart' });
-  }
-};
-
-const addCartItem = async (req, res) => {
-  try {
-    const { item } = req.body;
-    if (!item || !item.id) return res.status(400).json({ message: 'Invalid item' });
-    const user = await User.findById(req.user.id);
-    const existing = user.cart.find(i => i.id === item.id);
-    if (existing) {
-      existing.quantity = (existing.quantity || 1) + (item.quantity || 1);
-    } else {
-      user.cart.push({ ...item, quantity: item.quantity || 1 });
-    }
-    await user.save();
-    return res.json({ cart: user.cart });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: 'Failed to add cart item' });
-  }
-};
-
-const removeCartItem = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await User.findById(req.user.id);
-    user.cart = user.cart.filter(i => i.id !== id);
-    await user.save();
-    return res.json({ cart: user.cart });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: 'Failed to remove cart item' });
-  }
-};
-
 // Wishlist
 const getWishlist = async (req, res) => {
   try {
@@ -119,10 +64,34 @@ const getOrders = async (req, res) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { items, total } = req.body;
+    const { items, total, shipping } = req.body;
     const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: 'Order items are required' });
+    }
+
+    const safeShippingSource = (shipping && typeof shipping === 'object') ? shipping : (user.deliveryInfo || {});
+    const safeShipping = {
+      fullName: String(safeShippingSource.fullName ?? '').trim(),
+      phone: String(safeShippingSource.phone ?? '').trim(),
+      address: String(safeShippingSource.address ?? '').trim(),
+      note: String(safeShippingSource.note ?? '').trim(),
+    };
+
+    // Do not hard-require shipping yet (frontend checkout step comes next),
+    // but persist a snapshot if available.
+
     const id = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const order = { id, items, total, createdAt: new Date() };
+    const numericTotal = Number(total);
+    const order = {
+      id,
+      items,
+      total: Number.isFinite(numericTotal) ? numericTotal : 0,
+      shipping: safeShipping,
+      createdAt: new Date(),
+    };
     user.orders.unshift(order);
     // Optionally clear cart
     user.cart = [];
@@ -135,10 +104,6 @@ const createOrder = async (req, res) => {
 };
 
 module.exports = {
-  getCart,
-  updateCart,
-  addCartItem,
-  removeCartItem,
   getWishlist,
   addWishlistItem,
   removeWishlistItem,

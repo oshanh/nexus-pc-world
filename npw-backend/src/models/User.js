@@ -34,10 +34,22 @@ const userSchema = new mongoose.Schema({
     price: String,
     imageUrls: [String]
   }],
+  deliveryInfo: {
+    fullName: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    address: { type: String, default: '' },
+    note: { type: String, default: '' }
+  },
   orders: [{
     id: String,
     items: [{ id: String, name: String, price: String, quantity: Number }],
     total: Number,
+    shipping: {
+      fullName: { type: String, default: '' },
+      phone: { type: String, default: '' },
+      address: { type: String, default: '' },
+      note: { type: String, default: '' }
+    },
     createdAt: Date
   }]
 }, {

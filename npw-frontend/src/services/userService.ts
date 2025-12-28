@@ -3,9 +3,11 @@ import { client } from '../api/client';
 export const userService = {
   // Cart
   getCart: async () => client.get('/user/cart'),
-  updateCart: async (items: any[]) => client.put('/user/cart', { items }),
+  setCart: async (items: any[]) => client.put('/user/cart', { items }),
   addCartItem: async (item: any) => client.post('/user/cart/items', { item }),
-  removeCartItem: async (id: string) => client.delete(`/user/cart/items/${id}`),
+  increaseCartItemQuantity: async (id: string, amount: number = 1) => client.post(`/user/cart/items/${id}/increase`, { amount }),
+  decreaseCartItemQuantity: async (id: string, amount: number = 1) => client.post(`/user/cart/items/${id}/decrease`, { amount }),
+  deleteCartItem: async (id: string) => client.delete(`/user/cart/items/${id}`),
 
   // Wishlist
   getWishlist: async () => client.get('/user/wishlist'),
@@ -16,4 +18,8 @@ export const userService = {
   // Orders
   getOrders: async () => client.get('/user/orders'),
   createOrder: async (payload: any) => client.post('/user/orders', payload),
+
+  // Account
+  getAccount: async () => client.get('/user/account'),
+  updateAccount: async (payload: any) => client.put('/user/account', payload),
 };
