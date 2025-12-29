@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import GamingButton from './GamingButton';
 import Icon from './Icon';
+import { useAuth } from '../contexts/AuthContext';
+import { adminPushService } from '../services/adminPushService';
 
 const NavItem: React.FC<{ to: string; label: string; collapsed: boolean; active?: boolean; icon?: import('./Icon').IconName }> = ({ to, label, collapsed, active, icon }) => {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ const NavItem: React.FC<{ to: string; label: string; collapsed: boolean; active?
 };
 
 const AdminLayout: React.FC<{ title?: string; children: React.ReactNode }> = ({ title, children }) => {
+  const { isAdmin, adminMode } = useAuth();
   const STORAGE_KEY = 'admin:sidebarCollapsed';
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try {
@@ -48,6 +51,25 @@ const AdminLayout: React.FC<{ title?: string; children: React.ReactNode }> = ({ 
       console.warn('Failed to persist admin sidebar state', err);
     }
   }, [collapsed]);
+
+  useEffect(() => {
+    if (!isAdmin || !adminMode) return;
+
+    let cancelled = false;
+    const setupPush = async () => {
+      try {
+        const res = await adminPushService.ensureSubscribed();
+        if (!res.ok && res.reason) console.warn(res.reason);
+      } catch (err) {
+        if (!cancelled) console.warn('Failed to set up admin push notifications', err);
+      }
+    };
+
+    setupPush();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, adminMode]);
 
   const toggleCollapsed = () => {
     // brief scale animation

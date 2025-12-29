@@ -301,6 +301,8 @@ const updateWishlist = async (req, res) => {
   }
 };
 
+const { sendToAllAdminSubscriptions } = require('../utils/pushNotifications');
+
 // Orders
 const getOrders = async (req, res) => {
   try {
@@ -374,6 +376,17 @@ const createOrder = async (req, res) => {
     };
 
     await saveOrderAndClearCart(user, order, requestedById);
+
+    // Fire-and-forget: don't block order creation on push delivery.
+    sendToAllAdminSubscriptions({
+      type: 'NEW_ORDER',
+      title: 'New order placed',
+      body: `${user.username} placed ${id} (Total: ${order.total})`,
+      url: '/admin/orders',
+      order: { id, total: order.total },
+      customer: { username: user.username }
+    }).catch(err => console.error('[push] notify admins failed:', err));
+
     return res.status(201).json({ order });
   } catch (error_) {
     console.error(error_);
