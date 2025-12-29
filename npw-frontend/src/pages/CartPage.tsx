@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useCart } from '../contexts/CartContext';
 import GamingButton from '../components/GamingButton';
 import Toast from '../components/Toast';
 import type { CartItem } from '../types';
+import { productService } from '../services/productService';
 
 const parsePrice = (price: string | number): number => {
     if (typeof price === 'number') return price;
@@ -62,14 +63,15 @@ const OrderConfirmation: React.FC<{ order: ConfirmedOrder; navigateTo: (path: st
 
 const CartItemRow: React.FC<{
     product: CartItem;
+    isUnavailable: boolean;
     onIncrease: (id: string) => void;
     onDecrease: (id: string) => void;
     onRemove: (id: string) => void;
-}> = ({ product, onIncrease, onDecrease, onRemove }) => {
+}> = ({ product, isUnavailable, onIncrease, onDecrease, onRemove }) => {
     const firstImageUrl = product.imageUrls?.find((u) => u?.trim());
 
     return (
-        <div className="bg-nexus-dark p-4 rounded-lg md:grid md:grid-cols-12 md:gap-4 md:items-center border border-nexus-gray/50">
+        <div className={`bg-nexus-dark p-4 rounded-lg md:grid md:grid-cols-12 md:gap-4 md:items-center border border-nexus-gray/50 ${isUnavailable ? 'opacity-70' : ''}`}>
         {/* Product Info */}
         <div className="md:col-span-5 flex items-center gap-4">
             <div className="w-20 h-20 shrink-0">
@@ -86,8 +88,18 @@ const CartItemRow: React.FC<{
                 )}
             </div>
             <div>
-                <p className="font-bold text-white">{product.name}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-bold text-white">{product.name}</p>
+                    {isUnavailable ? (
+                        <span className="text-xs font-bold uppercase tracking-wide px-2 py-1 rounded bg-nexus-gray/40 text-gray-300 border border-nexus-gray/60">
+                            Unavailable
+                        </span>
+                    ) : null}
+                </div>
                 <p className="text-sm text-gray-400">{product.subCategory || product.category}</p>
+                {isUnavailable ? (
+                    <p className="text-sm text-red-400 mt-1">This product is no longer available. Please remove it to continue.</p>
+                ) : null}
             </div>
         </div>
         
@@ -101,9 +113,9 @@ const CartItemRow: React.FC<{
         <div className="mt-4 md:mt-0 md:col-span-3 flex justify-between md:justify-center items-center">
              <span className="md:hidden text-gray-400 font-bold">Quantity</span>
             <div className="flex items-center">
-                <GamingButton onClick={() => onDecrease(product.id)} size="sm" iconOnly={true} className="h-8! w-8!">-</GamingButton>
+                <GamingButton onClick={() => onDecrease(product.id)} disabled={isUnavailable} size="sm" iconOnly={true} className="h-8! w-8!">-</GamingButton>
                 <span className="w-12 text-center font-bold text-white text-lg">{product.quantity}</span>
-                <GamingButton onClick={() => onIncrease(product.id)} size="sm" iconOnly={true} className="h-8! w-8!">+</GamingButton>
+                <GamingButton onClick={() => onIncrease(product.id)} disabled={isUnavailable} size="sm" iconOnly={true} className="h-8! w-8!">+</GamingButton>
             </div>
         </div>
 
@@ -126,7 +138,8 @@ const OrderSummary: React.FC<{
     onClearCart: () => void;
     onCheckout: () => void;
     isProcessing: boolean;
-}> = ({ total, onClearCart, onCheckout, isProcessing }) => (
+    checkoutDisabled: boolean;
+}> = ({ total, onClearCart, onCheckout, isProcessing, checkoutDisabled }) => (
     <div className="lg:col-span-1">
         <div className="bg-nexus-dark p-6 rounded-lg sticky top-24 border border-nexus-gray">
             <h2 className="text-xl font-exo font-bold text-white mb-6 border-b border-nexus-gray pb-4">Order Summary</h2>
@@ -144,7 +157,7 @@ const OrderSummary: React.FC<{
                     <span className="text-nexus-blue">Rs {total.toLocaleString()}</span>
                 </div>
             </div>
-             <GamingButton onClick={onCheckout} disabled={isProcessing} className="w-full mt-8" variant="cta">
+             <GamingButton onClick={onCheckout} disabled={isProcessing || checkoutDisabled} className="w-full mt-8" variant="cta">
                 {isProcessing ? (
                     <div className="flex items-center justify-center gap-2">
                         <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -157,6 +170,9 @@ const OrderSummary: React.FC<{
                     'Proceed to Checkout'
                 )}
             </GamingButton>
+            {checkoutDisabled ? (
+                <div className="mt-3 text-sm text-red-400">Remove unavailable items to proceed.</div>
+            ) : null}
             <GamingButton onClick={onClearCart} variant="danger" size="sm" className="w-full mt-4" disabled={isProcessing}>
                 Clear Cart
             </GamingButton>
@@ -167,11 +183,49 @@ const OrderSummary: React.FC<{
 const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateTo }) => {
     const { cartItems, increaseQuantity, decreaseQuantity, removeFromCart, cartTotal, clearCart } = useCart();
     const [isProcessing] = useState(false);
+    const [unavailableIds, setUnavailableIds] = useState<Set<string>>(() => new Set());
     const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
         visible: false,
         message: '',
         type: 'success',
     });
+
+    const cartIdsKey = useMemo(() => cartItems.map(i => i.id).sort((a, b) => a.localeCompare(b)).join('|'), [cartItems]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const checkAvailability = async () => {
+            if (cartItems.length === 0) {
+                if (!cancelled) setUnavailableIds(new Set());
+                return;
+            }
+
+            const ids = Array.from(new Set(cartItems.map(i => i.id)));
+            const results = await Promise.all(
+                ids.map(async (id) => {
+                    try {
+                        await productService.getById(id);
+                        return { id, ok: true };
+                    } catch {
+                        return { id, ok: false };
+                    }
+                })
+            );
+
+            const next = new Set<string>();
+            for (const r of results) {
+                if (!r.ok) next.add(r.id);
+            }
+
+            if (!cancelled) setUnavailableIds(next);
+        };
+
+        checkAvailability();
+        return () => { cancelled = true; };
+    }, [cartIdsKey]);
+
+    const hasUnavailableItems = unavailableIds.size > 0;
 
     const showToast = (type: 'success' | 'error', message: string, timeoutMs: number = 3000) => {
         setToast({ visible: true, type, message });
@@ -181,6 +235,10 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
     const handleProceedToCheckout = () => {
         if (cartItems.length === 0) {
             showToast('error', 'Your cart is empty.', 2500);
+            return;
+        }
+        if (hasUnavailableItems) {
+            showToast('error', 'Some items are unavailable. Please remove them to proceed.', 3500);
             return;
         }
         navigateTo('/checkout');
@@ -215,6 +273,7 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
                         <CartItemRow
                             key={product.id}
                             product={product}
+                            isUnavailable={unavailableIds.has(product.id)}
                             onIncrease={(id) => increaseQuantity(id)}
                             onDecrease={(id) => decreaseQuantity(id)}
                             onRemove={(id) => removeFromCart(id)}
@@ -227,6 +286,7 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
                         onClearCart={clearCart}
                         onCheckout={handleProceedToCheckout}
                         isProcessing={isProcessing}
+                        checkoutDisabled={hasUnavailableItems}
                     />
                 </div>
             </div>

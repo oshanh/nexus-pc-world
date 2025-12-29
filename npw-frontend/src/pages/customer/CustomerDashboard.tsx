@@ -8,6 +8,7 @@ import { userService } from '../../services/userService';
 import GamingButton from '../../components/GamingButton';
 import AccessDenied from '../../components/AccessDenied';
 import Toast from '../../components/Toast';
+import { API_BASE_URL } from '../../api/client';
 
 interface Order {
   id: string;
@@ -17,8 +18,8 @@ interface Order {
   shippingAddress?: Partial<Address>;
   shipToDifferentAddress?: boolean;
   payment?: {
-    method?: 'cod' | 'bank_transfer' | 'payhere' | string;
-    status?: 'pending' | 'awaiting_receipt' | 'awaiting_confirmation' | 'paid' | 'failed' | string;
+    method?: 'cod' | 'bank_transfer' | 'payhere';
+    status?: 'pending' | 'awaiting_receipt' | 'awaiting_confirmation' | 'paid' | 'failed';
     deliveryCharge?: number;
     bankTransferReceiptUrl?: string;
     bankTransferReceiptFilename?: string;
@@ -218,8 +219,6 @@ const AddressForm: React.FC<{
   </div>
 );
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-
 const formatAddressOneLine = (address: Partial<Address> | null | undefined): string => {
   const a = address || {};
   const name = [a.firstName, a.lastName].filter(Boolean).join(' ').trim();
@@ -291,6 +290,23 @@ const DashboardHome: React.FC<{
 };
 
 const OrdersView: React.FC<{ orders: Order[]; ordersError: string | null }> = ({ orders, ordersError }) => {
+  const [previewReceiptOrderId, setPreviewReceiptOrderId] = useState<string | null>(null);
+
+  const guessIsPdf = (order: Order): boolean => {
+    const mime = String(order.payment?.bankTransferReceiptMimeType || '').toLowerCase();
+    if (mime.includes('pdf')) return true;
+    const name = String(order.payment?.bankTransferReceiptFilename || '').toLowerCase();
+    return name.endsWith('.pdf');
+  };
+
+  const getReceiptAbsoluteUrl = (order: Order): string => {
+    const direct = String(order.payment?.bankTransferReceiptUrl || '').trim();
+    if (direct) return `${API_BASE_URL}${direct}`;
+    const filename = String(order.payment?.bankTransferReceiptFilename || '').trim();
+    if (!filename) return '';
+    return `${API_BASE_URL}/user/payment/bank-transfer/receipt/${encodeURIComponent(filename)}`;
+  };
+
   let content: React.ReactNode;
   if (ordersError) {
     content = <div className="p-8 bg-nexus-dark rounded-md text-center text-red-400">{ordersError}</div>;
@@ -299,7 +315,12 @@ const OrdersView: React.FC<{ orders: Order[]; ordersError: string | null }> = ({
   } else {
     content = (
       <div className="space-y-4">
-        {orders.map((order) => (
+        {orders.map((order) => {
+          const receiptAbsoluteUrl = getReceiptAbsoluteUrl(order);
+          const isPdf = guessIsPdf(order);
+          const showPreview = previewReceiptOrderId === order.id;
+
+          return (
           <div key={order.id} className="bg-nexus-dark p-4 rounded border border-nexus-gray">
             <div className="flex justify-between items-center mb-2">
               <div className="font-bold text-white">Order {order.id}</div>
@@ -350,14 +371,44 @@ const OrdersView: React.FC<{ orders: Order[]; ordersError: string | null }> = ({
                 {String(order.payment?.method) === 'bank_transfer' && (order.payment?.bankTransferReceiptUrl || order.payment?.bankTransferReceiptFilename) ? (
                   <div className="text-sm">
                     <div className="text-gray-400">Bank transfer receipt</div>
-                    <a
-                      className="text-nexus-purple hover:underline"
-                      href={`${API_BASE_URL}${order.payment?.bankTransferReceiptUrl || `/user/payment/bank-transfer/receipt/${encodeURIComponent(String(order.payment?.bankTransferReceiptFilename || ''))}`}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Download receipt
-                    </a>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <a
+                        className="text-nexus-purple hover:underline"
+                        href={receiptAbsoluteUrl || '#'}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open receipt
+                      </a>
+                      <GamingButton
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setPreviewReceiptOrderId((prev) => (prev === order.id ? null : order.id))}
+                      >
+                        {showPreview ? 'Hide Preview' : 'Preview'}
+                      </GamingButton>
+                    </div>
+
+                    {showPreview && receiptAbsoluteUrl ? (
+                      <div className="mt-3 bg-nexus-gray/30 border border-nexus-gray/60 rounded p-3">
+                        {isPdf ? (
+                          <iframe
+                            src={receiptAbsoluteUrl}
+                            title={`Receipt preview for ${order.id}`}
+                            className="w-full h-96 rounded"
+                          />
+                        ) : (
+                          <img
+                            src={receiptAbsoluteUrl}
+                            alt={`Receipt preview for ${order.id}`}
+                            className="w-full max-h-130 object-contain rounded"
+                          />
+                        )}
+                        <div className="mt-2 text-xs text-gray-400">
+                          If the preview doesn’t load, use “Open receipt”.
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -365,7 +416,8 @@ const OrdersView: React.FC<{ orders: Order[]; ordersError: string | null }> = ({
               </div>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
     );
   }
