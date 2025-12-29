@@ -190,7 +190,13 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
         type: 'success',
     });
 
-    const cartIdsKey = useMemo(() => cartItems.map(i => i.id).sort((a, b) => a.localeCompare(b)).join('|'), [cartItems]);
+    const cartIdsKey = useMemo(
+        () => cartItems
+            .map(i => `${i.id}:${Number(i.quantity) || 0}`)
+            .sort((a, b) => a.localeCompare(b))
+            .join('|'),
+        [cartItems]
+    );
 
     useEffect(() => {
         let cancelled = false;
@@ -233,15 +239,42 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
     };
 
     const handleProceedToCheckout = () => {
-        if (cartItems.length === 0) {
-            showToast('error', 'Your cart is empty.', 2500);
-            return;
-        }
-        if (hasUnavailableItems) {
-            showToast('error', 'Some items are unavailable. Please remove them to proceed.', 3500);
-            return;
-        }
-        navigateTo('/checkout');
+        (async () => {
+            if (cartItems.length === 0) {
+                showToast('error', 'Your cart is empty.', 2500);
+                return;
+            }
+            if (hasUnavailableItems) {
+                showToast('error', 'Some items are unavailable. Please remove them to proceed.', 3500);
+                return;
+            }
+
+            // Stock validation happens on checkout/payment too, but we block here for faster feedback.
+            const qtyById = new Map<string, number>();
+            for (const item of cartItems) {
+                qtyById.set(item.id, (qtyById.get(item.id) || 0) + (Number(item.quantity) || 0));
+            }
+            const ids = Array.from(qtyById.keys());
+            const results = await Promise.all(
+                ids.map(async (id) => {
+                    try {
+                        const p = await productService.getById(id);
+                        const requested = qtyById.get(id) || 0;
+                        const available = Math.max(0, Number(p?.stock) || 0);
+                        return { id, ok: requested > 0 && requested <= available };
+                    } catch {
+                        return { id, ok: false };
+                    }
+                })
+            );
+
+            if (results.some(r => !r.ok)) {
+                showToast('error', 'Some items are out of stock. Please adjust quantities to proceed.', 4500);
+                return;
+            }
+
+            navigateTo('/checkout');
+        })();
     };
 
     if (cartItems.length === 0) {

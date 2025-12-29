@@ -7,6 +7,8 @@ import AccessDenied from '../components/AccessDenied';
 import OrderConfirmation, { type ConfirmedOrder } from '../components/checkout/OrderConfirmation';
 import { userService } from '../services/userService';
 import type { Address } from '../components/checkout/AddressFields';
+import { ApiError } from '../api/client';
+import { productService } from '../services/productService';
 
 type PaymentMethod = 'cod' | 'bank_transfer' | 'payhere';
 
@@ -78,8 +80,65 @@ const PaymentPage: React.FC<{ navigateTo: (path: string) => void }> = ({ navigat
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
   const [bankReceiptFile, setBankReceiptFile] = useState<File | null>(null);
   const [uploadedReceipt, setUploadedReceipt] = useState<UploadedReceipt | null>(null);
+  const [unavailableMessage, setUnavailableMessage] = useState('');
+  const [unavailableIds, setUnavailableIds] = useState<Set<string>>(() => new Set());
 
   const orderItemsSnapshot = useMemo(() => cartItems, [cartItems]);
+  const cartIdsKey = useMemo(
+    () => cartItems
+      .map(i => `${i.id}:${Number(i.quantity) || 0}`)
+      .sort((a, b) => a.localeCompare(b))
+      .join('|'),
+    [cartItems]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkAvailability = async () => {
+      if (cartItems.length === 0) {
+        if (!cancelled) setUnavailableIds(new Set());
+        return;
+      }
+
+      const ids = Array.from(new Set(cartItems.map(i => i.id)));
+      const qtyById = new Map<string, number>();
+      for (const item of cartItems) {
+        qtyById.set(item.id, (qtyById.get(item.id) || 0) + (Number(item.quantity) || 0));
+      }
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const p = await productService.getById(id);
+            const requested = qtyById.get(id) || 0;
+            const available = Math.max(0, Number(p?.stock) || 0);
+            return { id, ok: requested > 0 && requested <= available };
+          } catch {
+            return { id, ok: false };
+          }
+        })
+      );
+
+      const next = new Set<string>();
+      for (const r of results) {
+        if (!r.ok) next.add(r.id);
+      }
+
+      if (!cancelled) setUnavailableIds(next);
+    };
+
+    checkAvailability();
+    return () => { cancelled = true; };
+  }, [cartIdsKey]);
+
+  const hasUnavailableItems = unavailableIds.size > 0;
+  const unavailableNames = useMemo(() => {
+    if (!hasUnavailableItems) return [] as string[];
+    return cartItems
+      .filter((item) => unavailableIds.has(item.id))
+      .map((item) => item.name)
+      .filter(Boolean);
+  }, [cartItems, hasUnavailableItems, unavailableIds]);
 
   useEffect(() => {
     if (!confirmedOrder) return;
@@ -113,75 +172,124 @@ const PaymentPage: React.FC<{ navigateTo: (path: string) => void }> = ({ navigat
   const deliveryCharge = Math.max(0, Number(settings?.deliveryCharge) || 0);
   const grandTotal = cartTotal + deliveryCharge;
 
-  const handleConfirmOrder = () => {
-    (async () => {
-      try {
-        if (!isAuthenticated || !user?.id) return;
+  const buildUnavailableMessage = (unavailableIds: string[]) => {
+    const namesFromCart = cartItems
+      .filter((item) => unavailableIds.includes(item.id))
+      .map((item) => item.name)
+      .filter(Boolean);
 
-        if (cartItems.length === 0) {
-          showToast('error', 'Your cart is empty.', 2500);
-          return;
-        }
+    const label = namesFromCart.length > 0 ? namesFromCart.join(', ') : unavailableIds.join(', ');
+    return `Some items in your order are no longer available: ${label}. Please review your cart and remove unavailable items.`;
+  };
 
-        const draft = loadCheckoutDraft(user.id);
-        if (!draft) {
-          showToast('error', 'Checkout details are missing. Please return to checkout.', 3500);
-          return;
-        }
+  const handlePlaceOrderError = (err: any) => {
+    console.warn('Payment failed', err);
 
-        if (paymentMethod === 'payhere') {
-          showToast('error', 'PayHere payment is not set up yet.', 3500);
-          return;
-        }
+    const apiData = err instanceof ApiError ? err.data : err?.data;
+    const unavailableIds: string[] | undefined = Array.isArray(apiData?.unavailableIds)
+      ? apiData.unavailableIds
+      : undefined;
 
-        let receipt = uploadedReceipt;
-        if (paymentMethod === 'bank_transfer') {
-          if (!receipt && bankReceiptFile) {
-            const uploadRes = await userService.uploadBankTransferReceipt(bankReceiptFile);
-            const r = uploadRes?.receipt;
-            const url = String(r?.downloadUrl || r?.url || '');
-            if (url) {
-              receipt = {
-                url,
-                filename: String(r.filename || ''),
-                mimeType: String(r.mimeType || ''),
-              };
-              setUploadedReceipt(receipt);
-            }
-          }
+    const insufficientStock: Array<{ id: string; requestedQty?: number; availableStock?: number }> | undefined =
+      Array.isArray(apiData?.insufficientStock) ? apiData.insufficientStock : undefined;
 
-          if (!receipt?.url) {
-            showToast('error', 'Please upload your bank transfer receipt.', 3500);
-            return;
-          }
-        }
+    if (unavailableIds && unavailableIds.length > 0) {
+      setUnavailableMessage(buildUnavailableMessage(unavailableIds));
+      showToast('error', 'Some cart items are unavailable. Please review your cart.', 5500);
+      return;
+    }
 
-        setIsProcessing(true);
+    if (insufficientStock && insufficientStock.length > 0) {
+      const ids = insufficientStock.map((x) => String(x?.id || '')).filter(Boolean);
+      const label = buildUnavailableMessage(ids);
+      setUnavailableMessage(label);
+      showToast('error', 'Some items are out of stock. Please update quantities in your cart.', 5500);
+      return;
+    }
 
-        const res = await userService.createOrder({
-          items: cartItems,
-          total: grandTotal,
-          billingAddress: draft.billingAddress,
-          shippingAddress: draft.shippingAddress,
-          shipToDifferentAddress: draft.shipToDifferentAddress,
-          paymentMethod,
-          deliveryCharge,
-          bankTransferReceiptUrl: receipt?.url,
-          bankTransferReceiptFilename: receipt?.filename,
-          bankTransferReceiptMimeType: receipt?.mimeType,
-        });
+    showToast('error', err?.message || 'Payment failed. Please try again.');
+  };
 
-        const order = res?.order || { id: `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
-        setConfirmedOrder({ items: orderItemsSnapshot, total: grandTotal, orderNumber: String(order.id) });
-        clearCheckoutDraft(user.id);
-        await clearCart();
-        setIsProcessing(false);
-      } catch (err: any) {
-        console.warn('Payment failed', err);
-        showToast('error', err?.message || 'Payment failed. Please try again.');
-        setIsProcessing(false);
-      }
-    })();
+  const resolveBankTransferReceipt = async (): Promise<UploadedReceipt | null> => {
+    if (paymentMethod !== 'bank_transfer') return null;
+
+    if (uploadedReceipt?.url) return uploadedReceipt;
+
+    if (!bankReceiptFile) {
+      showToast('error', 'Please upload your bank transfer receipt.', 3500);
+      return null;
+    }
+
+    const uploadRes = await userService.uploadBankTransferReceipt(bankReceiptFile);
+    const r = uploadRes?.receipt;
+    const url = String(r?.downloadUrl || r?.url || '');
+    if (!url) {
+      showToast('error', 'Receipt upload failed. Please try again.', 3500);
+      return null;
+    }
+
+    const receipt: UploadedReceipt = {
+      url,
+      filename: String(r.filename || ''),
+      mimeType: String(r.mimeType || ''),
+    };
+    setUploadedReceipt(receipt);
+    return receipt;
+  };
+
+  const handleConfirmOrder = async () => {
+    if (!isAuthenticated || !user?.id) return;
+
+    setUnavailableMessage('');
+
+    if (hasUnavailableItems) {
+      showToast('error', 'Some items are unavailable. Please remove them in your cart to proceed.', 4500);
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      showToast('error', 'Your cart is empty.', 2500);
+      return;
+    }
+
+    const draft = loadCheckoutDraft(user.id);
+    if (!draft) {
+      showToast('error', 'Checkout details are missing. Please return to checkout.', 3500);
+      return;
+    }
+
+    if (paymentMethod === 'payhere') {
+      showToast('error', 'PayHere payment is not set up yet.', 3500);
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const receipt = await resolveBankTransferReceipt();
+      if (paymentMethod === 'bank_transfer' && !receipt?.url) return;
+
+      const res = await userService.createOrder({
+        items: cartItems,
+        total: grandTotal,
+        billingAddress: draft.billingAddress,
+        shippingAddress: draft.shippingAddress,
+        shipToDifferentAddress: draft.shipToDifferentAddress,
+        paymentMethod,
+        deliveryCharge,
+        bankTransferReceiptUrl: receipt?.url,
+        bankTransferReceiptFilename: receipt?.filename,
+        bankTransferReceiptMimeType: receipt?.mimeType,
+      });
+
+      const order = res?.order || { id: `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
+      setConfirmedOrder({ items: orderItemsSnapshot, total: grandTotal, orderNumber: String(order.id) });
+      clearCheckoutDraft(user.id);
+      await clearCart();
+    } catch (err: any) {
+      handlePlaceOrderError(err);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (confirmedOrder) {
@@ -254,7 +362,7 @@ const PaymentPage: React.FC<{ navigateTo: (path: string) => void }> = ({ navigat
                     className="mt-1 h-4 w-4"
                     checked={paymentMethod === 'cod'}
                     onChange={() => setPaymentMethod('cod')}
-                    disabled={isProcessing}
+                    disabled={isProcessing || hasUnavailableItems}
                   />
                   <label htmlFor={paymentMethodInputId('cod')} className="cursor-pointer">
                     <div className="text-white font-exo font-bold">Cash on Delivery</div>
@@ -269,8 +377,10 @@ const PaymentPage: React.FC<{ navigateTo: (path: string) => void }> = ({ navigat
                     name="payment-method"
                     className="mt-1 h-4 w-4"
                     checked={paymentMethod === 'bank_transfer'}
-                    onChange={() => setPaymentMethod('bank_transfer')}
-                    disabled={isProcessing}
+                    onChange={() => {
+                      setPaymentMethod('bank_transfer');
+                    }}
+                    disabled={isProcessing || hasUnavailableItems}
                   />
                   <label htmlFor={paymentMethodInputId('bank_transfer')} className="cursor-pointer">
                     <div className="text-white font-exo font-bold">Bank Transfer</div>
@@ -285,8 +395,10 @@ const PaymentPage: React.FC<{ navigateTo: (path: string) => void }> = ({ navigat
                     name="payment-method"
                     className="mt-1 h-4 w-4"
                     checked={paymentMethod === 'payhere'}
-                    onChange={() => setPaymentMethod('payhere')}
-                    disabled={isProcessing}
+                    onChange={() => {
+                      showToast('error', 'PayHere payment is not set up yet.', 3500);
+                    }}
+                    disabled={isProcessing || hasUnavailableItems}
                   />
                   <label htmlFor={paymentMethodInputId('payhere')} className="cursor-pointer">
                     <div className="text-white font-exo font-bold">PayHere</div>
@@ -377,9 +489,34 @@ const PaymentPage: React.FC<{ navigateTo: (path: string) => void }> = ({ navigat
                 <GamingButton onClick={() => navigateTo('/checkout')} variant="secondary" disabled={isProcessing} className="w-full">
                   Back to Checkout
                 </GamingButton>
-                <GamingButton onClick={handleConfirmOrder} variant="cta" disabled={isProcessing} className="w-full">
+                <GamingButton onClick={handleConfirmOrder} variant="cta" disabled={isProcessing || hasUnavailableItems} className="w-full">
                   {isProcessing ? 'Processing...' : 'Place Order'}
                 </GamingButton>
+
+                {hasUnavailableItems ? (
+                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+                    <div className="text-sm text-red-200">
+                      Some items in your cart are unavailable.
+                      {unavailableNames.length > 0 ? ` (${unavailableNames.join(', ')})` : ''} Please remove them to proceed.
+                    </div>
+                    <div className="mt-2">
+                      <GamingButton onClick={() => navigateTo('/cart')} variant="secondary" className="w-full">
+                        Go to Cart
+                      </GamingButton>
+                    </div>
+                  </div>
+                ) : null}
+
+                {unavailableMessage ? (
+                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+                    <div className="text-sm text-red-200">{unavailableMessage}</div>
+                    <div className="mt-2">
+                      <GamingButton onClick={() => navigateTo('/cart')} variant="secondary" className="w-full">
+                        Go to Cart
+                      </GamingButton>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>

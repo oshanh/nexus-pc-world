@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { userService } from '../services/userService';
+import { productService } from '../services/productService';
 import Toast from '../components/Toast';
 import GamingButton from '../components/GamingButton';
 import AccessDenied from '../components/AccessDenied';
@@ -54,6 +55,32 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
         if (!isAuthenticated) return;
         if (cartItems.length === 0) {
           showToast('error', 'Your cart is empty.', 2500);
+          return;
+        }
+
+        // Prevent checkout if any item is inactive/missing or doesn't have enough stock
+        const qtyById = new Map<string, number>();
+        for (const item of cartItems) {
+          qtyById.set(item.id, (qtyById.get(item.id) || 0) + (Number(item.quantity) || 0));
+        }
+
+        const ids = Array.from(qtyById.keys());
+        const results = await Promise.all(
+          ids.map(async (id) => {
+            try {
+              const p = await productService.getById(id);
+              const requested = qtyById.get(id) || 0;
+              const available = Math.max(0, Number(p?.stock) || 0);
+              return { id, ok: requested > 0 && requested <= available };
+            } catch {
+              return { id, ok: false };
+            }
+          })
+        );
+
+        const hasUnavailable = results.some(r => !r.ok);
+        if (hasUnavailable) {
+          showToast('error', 'Some items are unavailable or out of stock. Please update your cart to proceed.', 4500);
           return;
         }
 

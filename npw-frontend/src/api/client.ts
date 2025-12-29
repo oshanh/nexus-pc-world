@@ -1,14 +1,28 @@
 /// <reference types="vite/client" />
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'; 
+
+export class ApiError extends Error {
+  status: number;
+  data: any;
+
+  constructor(message: string, status: number, data?: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
 
 // Helper to parse error response
-const parseErrorResponse = async (response: Response): Promise<string> => {
+const parseErrorResponse = async (
+  response: Response
+): Promise<{ message: string; data?: any }> => {
   try {
     const data = await response.json();
-    return data.message || data.error || response.statusText;
+    return { message: data.message || data.error || response.statusText, data };
   } catch {
-    return response.statusText;
+    return { message: response.statusText };
   }
 };
 
@@ -16,9 +30,10 @@ export const client = {
   get: async (endpoint: string) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, { credentials: 'include' });
     if (!response.ok) {
-      const errorMsg = await parseErrorResponse(response);
-      if (response.status === 401) throw new Error(`Unauthorized: ${errorMsg}`);
-      throw new Error(errorMsg);
+      const parsed = await parseErrorResponse(response);
+      const errorMsg = parsed.message;
+      if (response.status === 401) throw new ApiError(`Unauthorized: ${errorMsg}`, response.status, parsed.data);
+      throw new ApiError(errorMsg, response.status, parsed.data);
     }
     return response.json();
   },
@@ -27,8 +42,8 @@ export const client = {
     if (this._csrfToken) return this._csrfToken;
     const res = await fetch(`${API_BASE_URL}/csrf-token`, { credentials: 'include' });
     if (!res.ok) {
-      const errorMsg = await parseErrorResponse(res);
-      throw new Error(`Failed to fetch CSRF token: ${errorMsg}`);
+      const parsed = await parseErrorResponse(res);
+      throw new ApiError(`Failed to fetch CSRF token: ${parsed.message}`, res.status, parsed.data);
     }
     const data = await res.json();
     this._csrfToken = data.csrfToken;
@@ -43,14 +58,15 @@ export const client = {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-      const errorMsg = await parseErrorResponse(response);
+      const parsed = await parseErrorResponse(response);
+      const errorMsg = parsed.message;
       // On CSRF failure (403), clear cached token so next request refetches it
       if (response.status === 403) {
         client._csrfToken = '';
-        throw new Error(`CSRF token invalid. Please retry: ${errorMsg}`);
+        throw new ApiError(`CSRF token invalid. Please retry: ${errorMsg}`, response.status, parsed.data);
       }
-      if (response.status === 401) throw new Error(`Unauthorized: ${errorMsg}`);
-      throw new Error(errorMsg);
+      if (response.status === 401) throw new ApiError(`Unauthorized: ${errorMsg}`, response.status, parsed.data);
+      throw new ApiError(errorMsg, response.status, parsed.data);
     }
     return response.json();
   },
@@ -63,13 +79,14 @@ export const client = {
       body: formData,
     });
     if (!response.ok) {
-      const errorMsg = await parseErrorResponse(response);
+      const parsed = await parseErrorResponse(response);
+      const errorMsg = parsed.message;
       if (response.status === 403) {
         client._csrfToken = '';
-        throw new Error(`CSRF token invalid. Please retry: ${errorMsg}`);
+        throw new ApiError(`CSRF token invalid. Please retry: ${errorMsg}`, response.status, parsed.data);
       }
-      if (response.status === 401) throw new Error(`Unauthorized: ${errorMsg}`);
-      throw new Error(errorMsg);
+      if (response.status === 401) throw new ApiError(`Unauthorized: ${errorMsg}`, response.status, parsed.data);
+      throw new ApiError(errorMsg, response.status, parsed.data);
     }
     return response.json();
   },
@@ -82,14 +99,15 @@ export const client = {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-      const errorMsg = await parseErrorResponse(response);
+      const parsed = await parseErrorResponse(response);
+      const errorMsg = parsed.message;
       // On CSRF failure (403), clear cached token so next request refetches it
       if (response.status === 403) {
         client._csrfToken = '';
-        throw new Error(`CSRF token invalid. Please retry: ${errorMsg}`);
+        throw new ApiError(`CSRF token invalid. Please retry: ${errorMsg}`, response.status, parsed.data);
       }
-      if (response.status === 401) throw new Error(`Unauthorized: ${errorMsg}`);
-      throw new Error(errorMsg);
+      if (response.status === 401) throw new ApiError(`Unauthorized: ${errorMsg}`, response.status, parsed.data);
+      throw new ApiError(errorMsg, response.status, parsed.data);
     }
     return response.json();
   },
@@ -101,14 +119,15 @@ export const client = {
       headers: { 'X-CSRF-Token': csrfToken }
     });
     if (!response.ok) {
-      const errorMsg = await parseErrorResponse(response);
+      const parsed = await parseErrorResponse(response);
+      const errorMsg = parsed.message;
       // On CSRF failure (403), clear cached token so next request refetches it
       if (response.status === 403) {
         client._csrfToken = '';
-        throw new Error(`CSRF token invalid. Please retry: ${errorMsg}`);
+        throw new ApiError(`CSRF token invalid. Please retry: ${errorMsg}`, response.status, parsed.data);
       }
-      if (response.status === 401) throw new Error(`Unauthorized: ${errorMsg}`);
-      throw new Error(errorMsg);
+      if (response.status === 401) throw new ApiError(`Unauthorized: ${errorMsg}`, response.status, parsed.data);
+      throw new ApiError(errorMsg, response.status, parsed.data);
     }
     return response.json();
   },

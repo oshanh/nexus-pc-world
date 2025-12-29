@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Product = require('../models/Product');
 
 const sanitizeString = (value, maxLen = 500) => {
   const s = String(value ?? '').trim();
@@ -35,6 +36,98 @@ const getUserShippingAddressSnapshot = (user, fallbackBilling) => {
     return sanitizeAddress(user.shippingAddress);
   }
   return fallbackBilling;
+};
+
+const summarizeRequestedQuantities = (items) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return { ok: false, status: 400, payload: { message: 'Order items are required' } };
+  }
+
+  const requestedById = new Map();
+  for (const it of items) {
+    const id = String(it?.id ?? '').trim();
+    const qtyNum = Number(it?.quantity);
+    const qty = Number.isFinite(qtyNum) ? Math.floor(qtyNum) : Number.NaN;
+
+    if (!id) {
+      return {
+        ok: false,
+        status: 400,
+        payload: { message: 'Some order items are invalid. Please refresh your cart and try again.' }
+      };
+    }
+
+    if (!Number.isFinite(qty) || qty <= 0) {
+      return {
+        ok: false,
+        status: 400,
+        payload: { message: 'Some order item quantities are invalid. Please refresh your cart and try again.' }
+      };
+    }
+
+    requestedById.set(id, (requestedById.get(id) || 0) + qty);
+  }
+
+  return { ok: true, requestedById };
+};
+
+const validateOrderItemsAreAvailable = async (items) => {
+  const summary = summarizeRequestedQuantities(items);
+  if (!summary.ok) return summary;
+
+  const { requestedById } = summary;
+  const uniqueIds = Array.from(requestedById.keys());
+
+  try {
+    const active = await Product.find({ _id: { $in: uniqueIds }, isActive: { $ne: false } })
+      .select('_id stock')
+      .lean();
+
+    const productById = new Map((active || []).map((p) => [String(p._id), p]));
+    const unavailableIds = uniqueIds.filter((id) => !productById.has(String(id)));
+
+    if (unavailableIds.length > 0) {
+      return {
+        ok: false,
+        status: 400,
+        payload: {
+          message: 'Some items in your order are no longer available. Please remove them from your cart and try again.',
+          unavailableIds
+        }
+      };
+    }
+
+    const insufficientStock = [];
+    for (const [id, requestedQty] of requestedById.entries()) {
+      const product = productById.get(String(id));
+      const availableStock = Number(product?.stock);
+      const safeAvailable = Number.isFinite(availableStock) ? Math.max(0, Math.floor(availableStock)) : 0;
+      if (requestedQty > safeAvailable) {
+        insufficientStock.push({ id, requestedQty, availableStock: safeAvailable });
+      }
+    }
+
+    if (insufficientStock.length > 0) {
+      return {
+        ok: false,
+        status: 400,
+        payload: {
+          message: 'Some items in your order do not have enough stock. Please update quantities in your cart and try again.',
+          insufficientStock,
+          unavailableIds: insufficientStock.map((x) => x.id)
+        }
+      };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    console.error(err);
+    return {
+      ok: false,
+      status: 400,
+      payload: { message: 'Some items in your order are invalid or unavailable. Please refresh your cart and try again.' }
+    };
+  }
 };
 
 // Wishlist
@@ -116,9 +209,8 @@ const createOrder = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: 'Order items are required' });
-    }
+    const itemsCheck = await validateOrderItemsAreAvailable(items);
+    if (!itemsCheck.ok) return res.status(itemsCheck.status).json(itemsCheck.payload);
 
     const wantsDifferentShipping = Boolean(shipToDifferentAddress);
 
