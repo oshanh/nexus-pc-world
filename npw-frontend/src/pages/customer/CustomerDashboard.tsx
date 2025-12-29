@@ -16,10 +16,17 @@ interface Order {
   createdAt: string;
 }
 
-interface DeliveryInfo {
-  fullName: string;
+interface Address {
+  firstName: string;
+  lastName: string;
   phone: string;
-  address: string;
+  companyName: string;
+  country: 'Sri Lanka';
+  streetAddress: string;
+  houseNumberAndStreetName: string;
+  apartment: string;
+  city: string;
+  postcode: string;
   note: string;
 }
 
@@ -28,12 +35,26 @@ const parsePrice = (price: string | number): number => {
   return Number.parseFloat(String(price).replaceAll(/[^0-9.]/g, '')) || 0;
 };
 
-const defaultDeliveryInfo = (fullName: string): DeliveryInfo => ({
-  fullName,
+const defaultAddress = (firstName: string, lastName: string): Address => ({
+  firstName,
+  lastName,
   phone: '',
-  address: '',
+  companyName: '',
+  country: 'Sri Lanka',
+  streetAddress: '',
+  houseNumberAndStreetName: '',
+  apartment: '',
+  city: '',
+  postcode: '',
   note: '',
 });
+
+const splitName = (fullName: string): { firstName: string; lastName: string } => {
+  const parts = String(fullName ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: '', lastName: '' };
+  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+};
 
 const safeParseJson = <T,>(raw: string | null): T | null => {
   if (!raw) return null;
@@ -43,6 +64,147 @@ const safeParseJson = <T,>(raw: string | null): T | null => {
     return null;
   }
 };
+
+const normalizeAddress = (raw: Partial<Address> | null | undefined, fallback: Address): Address => {
+  const r = raw || {};
+  return {
+    ...fallback,
+    firstName: String(r.firstName ?? fallback.firstName),
+    lastName: String(r.lastName ?? fallback.lastName),
+    phone: String(r.phone ?? ''),
+    companyName: String(r.companyName ?? ''),
+    country: 'Sri Lanka',
+    streetAddress: String(r.streetAddress ?? ''),
+    houseNumberAndStreetName: String(r.houseNumberAndStreetName ?? ''),
+    apartment: String(r.apartment ?? ''),
+    city: String(r.city ?? ''),
+    postcode: String(r.postcode ?? ''),
+    note: String(r.note ?? ''),
+  };
+};
+
+const AddressForm: React.FC<{
+  title: string;
+  address: Address;
+  onChange: (next: Address) => void;
+}> = ({ title, address, onChange }) => (
+  <div className="bg-nexus-dark p-6 rounded border border-nexus-gray">
+    <h3 className="text-xl font-bold text-white mb-4">{title}</h3>
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor={`${title}-first-name`} className="block text-sm text-gray-400 mb-1">First name *</label>
+          <input
+            id={`${title}-first-name`}
+            value={address.firstName}
+            onChange={(e) => onChange({ ...address, firstName: e.target.value })}
+            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
+          />
+        </div>
+        <div>
+          <label htmlFor={`${title}-last-name`} className="block text-sm text-gray-400 mb-1">Last name *</label>
+          <input
+            id={`${title}-last-name`}
+            value={address.lastName}
+            onChange={(e) => onChange({ ...address, lastName: e.target.value })}
+            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor={`${title}-phone`} className="block text-sm text-gray-400 mb-1">Phone (optional)</label>
+        <input
+          id={`${title}-phone`}
+          value={address.phone}
+          onChange={(e) => onChange({ ...address, phone: e.target.value })}
+          className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${title}-company`} className="block text-sm text-gray-400 mb-1">Company name (optional)</label>
+        <input
+          id={`${title}-company`}
+          value={address.companyName}
+          onChange={(e) => onChange({ ...address, companyName: e.target.value })}
+          className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${title}-country`} className="block text-sm text-gray-400 mb-1">Country / Region *</label>
+        <input
+          id={`${title}-country`}
+          value="Sri Lanka"
+          readOnly
+          className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-gray-400"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${title}-street`} className="block text-sm text-gray-400 mb-1">Street address *</label>
+        <input
+          id={`${title}-street`}
+          value={address.streetAddress}
+          onChange={(e) => onChange({ ...address, streetAddress: e.target.value })}
+          className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
+          placeholder="House number and street name"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${title}-house`} className="block text-sm text-gray-400 mb-1">House number and street name</label>
+        <input
+          id={`${title}-house`}
+          value={address.houseNumberAndStreetName}
+          onChange={(e) => onChange({ ...address, houseNumberAndStreetName: e.target.value })}
+          className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${title}-apartment`} className="block text-sm text-gray-400 mb-1">Apartment, suite, unit, etc. (optional)</label>
+        <input
+          id={`${title}-apartment`}
+          value={address.apartment}
+          onChange={(e) => onChange({ ...address, apartment: e.target.value })}
+          className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${title}-city`} className="block text-sm text-gray-400 mb-1">Town / City *</label>
+        <input
+          id={`${title}-city`}
+          value={address.city}
+          onChange={(e) => onChange({ ...address, city: e.target.value })}
+          className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${title}-postcode`} className="block text-sm text-gray-400 mb-1">Postcode / ZIP *</label>
+        <input
+          id={`${title}-postcode`}
+          value={address.postcode}
+          onChange={(e) => onChange({ ...address, postcode: e.target.value })}
+          className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${title}-note`} className="block text-sm text-gray-400 mb-1">Order notes (optional)</label>
+        <textarea
+          id={`${title}-note`}
+          value={address.note}
+          onChange={(e) => onChange({ ...address, note: e.target.value })}
+          className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white min-h-20"
+        />
+      </div>
+    </div>
+  </div>
+);
 
 const DashboardHome: React.FC<{
   userName?: string;
@@ -138,16 +300,20 @@ const AccountView: React.FC<{
   userEmail: string;
   displayName: string;
   onChangeDisplayName: (v: string) => void;
-  deliveryInfo: DeliveryInfo;
-  onChangeDeliveryInfo: (next: DeliveryInfo) => void;
+  billingAddress: Address;
+  onChangeBillingAddress: (next: Address) => void;
+  shippingAddress: Address;
+  onChangeShippingAddress: (next: Address) => void;
   onSave: () => void;
   onContinueShopping: () => void;
 }> = ({
   userEmail,
   displayName,
   onChangeDisplayName,
-  deliveryInfo,
-  onChangeDeliveryInfo,
+  billingAddress,
+  onChangeBillingAddress,
+  shippingAddress,
+  onChangeShippingAddress,
   onSave,
   onContinueShopping,
 }) => {
@@ -179,51 +345,12 @@ const AccountView: React.FC<{
         </div>
       </div>
 
-      <div className="bg-nexus-dark p-6 rounded border border-nexus-gray">
-        <h3 className="text-xl font-bold text-white mb-4">Delivery Info</h3>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="delivery-full-name" className="block text-sm text-gray-400 mb-1">Full Name</label>
-            <input
-              id="delivery-full-name"
-              value={deliveryInfo.fullName}
-              onChange={(e) => onChangeDeliveryInfo({ ...deliveryInfo, fullName: e.target.value })}
-              className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
-            />
-          </div>
-          <div>
-            <label htmlFor="delivery-phone" className="block text-sm text-gray-400 mb-1">Phone Number</label>
-            <input
-              id="delivery-phone"
-              value={deliveryInfo.phone}
-              onChange={(e) => onChangeDeliveryInfo({ ...deliveryInfo, phone: e.target.value })}
-              className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
-            />
-          </div>
-          <div>
-            <label htmlFor="delivery-address" className="block text-sm text-gray-400 mb-1">Address</label>
-            <textarea
-              id="delivery-address"
-              value={deliveryInfo.address}
-              onChange={(e) => onChangeDeliveryInfo({ ...deliveryInfo, address: e.target.value })}
-              className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white min-h-24"
-            />
-          </div>
-          <div>
-            <label htmlFor="delivery-note" className="block text-sm text-gray-400 mb-1">Note (optional)</label>
-            <textarea
-              id="delivery-note"
-              value={deliveryInfo.note}
-              onChange={(e) => onChangeDeliveryInfo({ ...deliveryInfo, note: e.target.value })}
-              className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white min-h-20"
-            />
-          </div>
+      <AddressForm title="Billing Address" address={billingAddress} onChange={onChangeBillingAddress} />
+      <AddressForm title="Shipping Address" address={shippingAddress} onChange={onChangeShippingAddress} />
 
-          <div className="flex gap-4">
-            <GamingButton onClick={onSave} variant="primary">Save</GamingButton>
-            <GamingButton onClick={onContinueShopping} variant="secondary">Continue Shopping</GamingButton>
-          </div>
-        </div>
+      <div className="flex gap-4">
+        <GamingButton onClick={onSave} variant="primary">Save</GamingButton>
+        <GamingButton onClick={onContinueShopping} variant="secondary">Continue Shopping</GamingButton>
       </div>
     </div>
   );
@@ -242,8 +369,11 @@ const CustomerDashboard: React.FC<{ navigateTo: (path: string) => void }> = ({ n
     type: 'success',
   });
 
-  const deliveryKey = useMemo(() => `nexusDeliveryInfo:${user?.id ?? 'guest'}`, [user?.id]);
-  const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>(() => defaultDeliveryInfo(user?.name ?? ''));
+  const billingKey = useMemo(() => `nexusBillingAddress:${user?.id ?? 'guest'}`, [user?.id]);
+  const shippingKey = useMemo(() => `nexusShippingAddress:${user?.id ?? 'guest'}`, [user?.id]);
+  const initialNameParts = splitName(user?.name ?? '');
+  const [billingAddress, setBillingAddress] = useState<Address>(() => defaultAddress(initialNameParts.firstName, initialNameParts.lastName));
+  const [shippingAddress, setShippingAddress] = useState<Address>(() => defaultAddress(initialNameParts.firstName, initialNameParts.lastName));
 
   useEffect(() => {
     setDisplayName(user?.name || '');
@@ -252,13 +382,15 @@ const CustomerDashboard: React.FC<{ navigateTo: (path: string) => void }> = ({ n
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const loadDeliveryInfo = async () => {
-      const local = safeParseJson<Partial<DeliveryInfo>>(localStorage.getItem(deliveryKey)) || {};
+    const loadAddresses = async () => {
+      const localBilling = safeParseJson<Partial<Address>>(localStorage.getItem(billingKey)) || {};
+      const localShipping = safeParseJson<Partial<Address>>(localStorage.getItem(shippingKey)) || {};
 
       try {
         const res = await userService.getAccount();
         const account = res?.account;
-        const backendDelivery = (account?.deliveryInfo || {}) as Partial<DeliveryInfo>;
+        const backendBilling = (account?.billingAddress || {}) as Partial<Address>;
+        const backendShipping = (account?.shippingAddress || {}) as Partial<Address>;
 
         const baseName = String(account?.username ?? user?.name ?? '');
 
@@ -267,34 +399,31 @@ const CustomerDashboard: React.FC<{ navigateTo: (path: string) => void }> = ({ n
           updateProfile(baseName);
         }
 
-        const merged: DeliveryInfo = {
-          ...defaultDeliveryInfo(baseName),
-          ...local,
-          fullName: String(backendDelivery.fullName ?? local.fullName ?? baseName),
-          phone: String(backendDelivery.phone ?? local.phone ?? ''),
-          address: String(backendDelivery.address ?? local.address ?? ''),
-          note: String(backendDelivery.note ?? local.note ?? ''),
-        };
+        const parts = splitName(baseName);
+        const fallback = defaultAddress(parts.firstName, parts.lastName);
+        const mergedBilling = normalizeAddress({ ...localBilling, ...backendBilling }, fallback);
+        const mergedShipping = normalizeAddress({ ...localShipping, ...backendShipping }, fallback);
 
-        setDeliveryInfo(merged);
+        setBillingAddress(mergedBilling);
+        setShippingAddress(mergedShipping);
 
         try {
-          localStorage.setItem(deliveryKey, JSON.stringify(merged));
+          localStorage.setItem(billingKey, JSON.stringify(mergedBilling));
+          localStorage.setItem(shippingKey, JSON.stringify(mergedShipping));
         } catch {
           // ignore
         }
       } catch (err) {
-        console.warn('Failed to load account from API, using local delivery info', err);
-        setDeliveryInfo({
-          ...defaultDeliveryInfo(user?.name ?? ''),
-          ...local,
-          fullName: String(local.fullName ?? user?.name ?? ''),
-        });
+        console.warn('Failed to load account from API, using local addresses', err);
+        const parts = splitName(user?.name ?? '');
+        const fallback = defaultAddress(parts.firstName, parts.lastName);
+        setBillingAddress(normalizeAddress(localBilling, fallback));
+        setShippingAddress(normalizeAddress(localShipping, fallback));
       }
     };
 
-    loadDeliveryInfo();
-  }, [deliveryKey, isAuthenticated, updateProfile, user?.name]);
+    loadAddresses();
+  }, [billingKey, shippingKey, isAuthenticated, updateProfile, user?.name]);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -325,12 +454,8 @@ const CustomerDashboard: React.FC<{ navigateTo: (path: string) => void }> = ({ n
     try {
       const payload = {
         username: displayName,
-        deliveryInfo: {
-          fullName: deliveryInfo.fullName,
-          phone: deliveryInfo.phone,
-          address: deliveryInfo.address,
-          note: deliveryInfo.note,
-        },
+        billingAddress,
+        shippingAddress,
       };
 
       const res = await userService.updateAccount(payload);
@@ -340,18 +465,14 @@ const CustomerDashboard: React.FC<{ navigateTo: (path: string) => void }> = ({ n
       updateProfile(nextName);
       setDisplayName(nextName);
 
-      const nextDeliveryInfo: DeliveryInfo = {
-        ...deliveryInfo,
-        fullName: String(account?.deliveryInfo?.fullName ?? deliveryInfo.fullName),
-        phone: String(account?.deliveryInfo?.phone ?? deliveryInfo.phone),
-        address: String(account?.deliveryInfo?.address ?? deliveryInfo.address),
-        note: String(account?.deliveryInfo?.note ?? deliveryInfo.note),
-      };
-
-      setDeliveryInfo(nextDeliveryInfo);
+      const nextBilling = normalizeAddress(account?.billingAddress, billingAddress);
+      const nextShipping = normalizeAddress(account?.shippingAddress, shippingAddress);
+      setBillingAddress(nextBilling);
+      setShippingAddress(nextShipping);
 
       try {
-        localStorage.setItem(deliveryKey, JSON.stringify(nextDeliveryInfo));
+        localStorage.setItem(billingKey, JSON.stringify(nextBilling));
+        localStorage.setItem(shippingKey, JSON.stringify(nextShipping));
       } catch {
         // ignore
       }
@@ -416,8 +537,10 @@ const CustomerDashboard: React.FC<{ navigateTo: (path: string) => void }> = ({ n
                     userEmail={user?.email ?? ''}
                     displayName={displayName}
                     onChangeDisplayName={setDisplayName}
-                    deliveryInfo={deliveryInfo}
-                    onChangeDeliveryInfo={setDeliveryInfo}
+                    billingAddress={billingAddress}
+                    onChangeBillingAddress={setBillingAddress}
+                    shippingAddress={shippingAddress}
+                    onChangeShippingAddress={setShippingAddress}
                     onSave={handleUpdateProfile}
                     onContinueShopping={() => navigateTo('/products')}
                   />

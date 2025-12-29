@@ -30,68 +30,245 @@ interface ConfirmedOrder {
     orderNumber: string;
 }
 
-interface ShippingDetails {
-    fullName: string;
+interface Address {
+    firstName: string;
+    lastName: string;
     phone: string;
-    address: string;
+    companyName: string;
+    country: 'Sri Lanka';
+    streetAddress: string;
+    houseNumberAndStreetName: string;
+    apartment: string;
+    city: string;
+    postcode: string;
     note: string;
 }
 
-const isShippingValid = (shipping: ShippingDetails): boolean => {
-    return !!shipping.fullName.trim() && !!shipping.phone.trim() && !!shipping.address.trim();
+const defaultAddress = (): Address => ({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    companyName: '',
+    country: 'Sri Lanka',
+    streetAddress: '',
+    houseNumberAndStreetName: '',
+    apartment: '',
+    city: '',
+    postcode: '',
+    note: '',
+});
+
+const normalizeAddress = (raw: Partial<Address> | null | undefined): Address => {
+    const r = raw || {};
+    return {
+        ...defaultAddress(),
+        firstName: String(r.firstName ?? ''),
+        lastName: String(r.lastName ?? ''),
+        phone: String(r.phone ?? ''),
+        companyName: String(r.companyName ?? ''),
+        country: 'Sri Lanka',
+        streetAddress: String(r.streetAddress ?? ''),
+        houseNumberAndStreetName: String(r.houseNumberAndStreetName ?? ''),
+        apartment: String(r.apartment ?? ''),
+        city: String(r.city ?? ''),
+        postcode: String(r.postcode ?? ''),
+        note: String(r.note ?? ''),
+    };
 };
 
+const isAddressValid = (address: Address): boolean => {
+    return !!address.firstName.trim()
+        && !!address.lastName.trim()
+        && !!address.streetAddress.trim()
+        && !!address.city.trim()
+        && !!address.postcode.trim();
+};
+
+const AddressFields: React.FC<{
+    prefix: string;
+    address: Address;
+    onChange: (next: Address) => void;
+    disabled?: boolean;
+}> = ({ prefix, address, onChange, disabled }) => (
+    <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label htmlFor={`${prefix}-first-name`} className="block text-sm text-gray-400 mb-1">First name *</label>
+                <input
+                    id={`${prefix}-first-name`}
+                    value={address.firstName}
+                    onChange={(e) => onChange({ ...address, firstName: e.target.value })}
+                    className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white disabled:opacity-60"
+                    disabled={disabled}
+                />
+            </div>
+            <div>
+                <label htmlFor={`${prefix}-last-name`} className="block text-sm text-gray-400 mb-1">Last name *</label>
+                <input
+                    id={`${prefix}-last-name`}
+                    value={address.lastName}
+                    onChange={(e) => onChange({ ...address, lastName: e.target.value })}
+                    className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white disabled:opacity-60"
+                    disabled={disabled}
+                />
+            </div>
+        </div>
+
+        <div>
+            <label htmlFor={`${prefix}-phone`} className="block text-sm text-gray-400 mb-1">Phone (optional)</label>
+            <input
+                id={`${prefix}-phone`}
+                value={address.phone}
+                onChange={(e) => onChange({ ...address, phone: e.target.value })}
+                className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white disabled:opacity-60"
+                disabled={disabled}
+            />
+        </div>
+
+        <div>
+            <label htmlFor={`${prefix}-company`} className="block text-sm text-gray-400 mb-1">Company name (optional)</label>
+            <input
+                id={`${prefix}-company`}
+                value={address.companyName}
+                onChange={(e) => onChange({ ...address, companyName: e.target.value })}
+                className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white disabled:opacity-60"
+                disabled={disabled}
+            />
+        </div>
+
+        <div>
+            <label htmlFor={`${prefix}-country`} className="block text-sm text-gray-400 mb-1">Country / Region *</label>
+            <input
+                id={`${prefix}-country`}
+                value="Sri Lanka"
+                readOnly
+                className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-gray-400"
+            />
+        </div>
+
+        <div>
+            <label htmlFor={`${prefix}-street`} className="block text-sm text-gray-400 mb-1">Street address *</label>
+            <input
+                id={`${prefix}-street`}
+                value={address.streetAddress}
+                onChange={(e) => onChange({ ...address, streetAddress: e.target.value })}
+                className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white disabled:opacity-60"
+                placeholder="House number and street name"
+                disabled={disabled}
+            />
+        </div>
+
+        <div>
+            <label htmlFor={`${prefix}-house`} className="block text-sm text-gray-400 mb-1">House number and street name</label>
+            <input
+                id={`${prefix}-house`}
+                value={address.houseNumberAndStreetName}
+                onChange={(e) => onChange({ ...address, houseNumberAndStreetName: e.target.value })}
+                className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white disabled:opacity-60"
+                disabled={disabled}
+            />
+        </div>
+
+        <div>
+            <label htmlFor={`${prefix}-apartment`} className="block text-sm text-gray-400 mb-1">Apartment, suite, unit, etc. (optional)</label>
+            <input
+                id={`${prefix}-apartment`}
+                value={address.apartment}
+                onChange={(e) => onChange({ ...address, apartment: e.target.value })}
+                className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white disabled:opacity-60"
+                disabled={disabled}
+            />
+        </div>
+
+        <div>
+            <label htmlFor={`${prefix}-city`} className="block text-sm text-gray-400 mb-1">Town / City *</label>
+            <input
+                id={`${prefix}-city`}
+                value={address.city}
+                onChange={(e) => onChange({ ...address, city: e.target.value })}
+                className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white disabled:opacity-60"
+                disabled={disabled}
+            />
+        </div>
+
+        <div>
+            <label htmlFor={`${prefix}-postcode`} className="block text-sm text-gray-400 mb-1">Postcode / ZIP *</label>
+            <input
+                id={`${prefix}-postcode`}
+                value={address.postcode}
+                onChange={(e) => onChange({ ...address, postcode: e.target.value })}
+                className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white disabled:opacity-60"
+                disabled={disabled}
+            />
+        </div>
+
+        <div>
+            <label htmlFor={`${prefix}-note`} className="block text-sm text-gray-400 mb-1">Order notes (optional)</label>
+            <textarea
+                id={`${prefix}-note`}
+                value={address.note}
+                onChange={(e) => onChange({ ...address, note: e.target.value })}
+                className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white min-h-20 disabled:opacity-60"
+                disabled={disabled}
+            />
+        </div>
+    </div>
+);
+
 const ShippingDetailsView: React.FC<{
-    shipping: ShippingDetails;
-    onChange: (next: ShippingDetails) => void;
+    billingAddress: Address;
+    onChangeBilling: (next: Address) => void;
+    shippingAddress: Address;
+    onChangeShipping: (next: Address) => void;
+    shipToDifferentAddress: boolean;
+    onToggleShipToDifferentAddress: (next: boolean) => void;
     onBack: () => void;
     onPlaceOrder: () => void;
     isProcessing: boolean;
-}> = ({ shipping, onChange, onBack, onPlaceOrder, isProcessing }) => (
+}> = ({
+    billingAddress,
+    onChangeBilling,
+    shippingAddress,
+    onChangeShipping,
+    shipToDifferentAddress,
+    onToggleShipToDifferentAddress,
+    onBack,
+    onPlaceOrder,
+    isProcessing,
+}) => (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-2 space-y-6">
             <div className="bg-nexus-dark/50 p-6 rounded-lg border border-nexus-gray">
-                <h2 className="text-2xl font-exo font-bold text-white mb-2">Shipping Details</h2>
-                <p className="text-gray-400 mb-6">Confirm your delivery information for this order.</p>
+                <h2 className="text-2xl font-exo font-bold text-white mb-2">Checkout</h2>
+                <p className="text-gray-400 mb-6">Enter your billing and shipping details to place this order.</p>
 
-                <div className="space-y-4">
+                <div className="space-y-8">
                     <div>
-                        <label htmlFor="shipping-full-name" className="block text-sm text-gray-400 mb-1">Full Name</label>
-                        <input
-                            id="shipping-full-name"
-                            value={shipping.fullName}
-                            onChange={(e) => onChange({ ...shipping, fullName: e.target.value })}
-                            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
-                        />
+                        <h3 className="text-xl font-exo font-bold text-white mb-4">Billing Address</h3>
+                        <AddressFields prefix="billing" address={billingAddress} onChange={onChangeBilling} />
                     </div>
 
                     <div>
-                        <label htmlFor="shipping-phone" className="block text-sm text-gray-400 mb-1">Phone Number</label>
-                        <input
-                            id="shipping-phone"
-                            value={shipping.phone}
-                            onChange={(e) => onChange({ ...shipping, phone: e.target.value })}
-                            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white"
-                        />
-                    </div>
+                        <div className="flex items-start gap-3 mb-4">
+                            <input
+                                id="ship-to-different"
+                                type="checkbox"
+                                checked={shipToDifferentAddress}
+                                onChange={(e) => onToggleShipToDifferentAddress(e.target.checked)}
+                                className="mt-1 h-4 w-4"
+                                disabled={isProcessing}
+                            />
+                            <label htmlFor="ship-to-different" className="text-sm text-gray-300 select-none">
+                                Ship to a different address
+                            </label>
+                        </div>
 
-                    <div>
-                        <label htmlFor="shipping-address" className="block text-sm text-gray-400 mb-1">Address</label>
-                        <textarea
-                            id="shipping-address"
-                            value={shipping.address}
-                            onChange={(e) => onChange({ ...shipping, address: e.target.value })}
-                            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white min-h-24"
-                        />
-                    </div>
-
-                    <div>
-                        <label htmlFor="shipping-note" className="block text-sm text-gray-400 mb-1">Note (optional)</label>
-                        <textarea
-                            id="shipping-note"
-                            value={shipping.note}
-                            onChange={(e) => onChange({ ...shipping, note: e.target.value })}
-                            className="w-full bg-nexus-gray border border-nexus-purple/30 rounded py-2 px-3 text-white min-h-20"
+                        <h3 className="text-xl font-exo font-bold text-white mb-4">Shipping Address</h3>
+                        <AddressFields
+                            prefix="shipping"
+                            address={shipToDifferentAddress ? shippingAddress : billingAddress}
+                            onChange={onChangeShipping}
+                            disabled={!shipToDifferentAddress || isProcessing}
                         />
                     </div>
 
@@ -106,8 +283,8 @@ const ShippingDetailsView: React.FC<{
         </div>
         <div className="lg:col-span-1">
             <div className="bg-nexus-dark p-6 rounded-lg sticky top-24 border border-nexus-gray">
-                <h2 className="text-xl font-exo font-bold text-white mb-4">Shipping Requirements</h2>
-                <p className="text-gray-400 text-sm">Full name, phone number, and address are required to place the order.</p>
+                <h2 className="text-xl font-exo font-bold text-white mb-4">Address Requirements</h2>
+                <p className="text-gray-400 text-sm">First name, last name, street address, town/city, and postcode are required.</p>
             </div>
         </div>
     </div>
@@ -256,7 +433,9 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
     const [checkoutState, setCheckoutState] = useState<CheckoutState>('cart');
     const [isProcessing, setIsProcessing] = useState(false);
     const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
-    const [shippingDetails, setShippingDetails] = useState<ShippingDetails>({ fullName: '', phone: '', address: '', note: '' });
+    const [billingAddress, setBillingAddress] = useState<Address>(() => defaultAddress());
+    const [shippingAddress, setShippingAddress] = useState<Address>(() => defaultAddress());
+    const [shipToDifferentAddress, setShipToDifferentAddress] = useState(false);
     const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
         visible: false,
         message: '',
@@ -297,15 +476,12 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
                 setIsProcessing(true);
 
                 const res = await userService.getAccount();
-                const delivery = (res?.account?.deliveryInfo || {}) as Partial<ShippingDetails>;
-                const next: ShippingDetails = {
-                    fullName: String(delivery.fullName ?? ''),
-                    phone: String(delivery.phone ?? ''),
-                    address: String(delivery.address ?? ''),
-                    note: String(delivery.note ?? ''),
-                };
+                const nextBilling = normalizeAddress(res?.account?.billingAddress);
+                const nextShipping = normalizeAddress(res?.account?.shippingAddress);
 
-                setShippingDetails(next);
+                setBillingAddress(nextBilling);
+                setShippingAddress(nextShipping);
+                setShipToDifferentAddress(false);
                 setCheckoutState('shipping');
                 setIsProcessing(false);
             } catch (err: any) {
@@ -322,8 +498,13 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
             try {
                 if (!user?.id) return;
 
-                if (!isShippingValid(shippingDetails)) {
-                    showToast('error', 'Please fill full name, phone number, and address.', 3500);
+                if (!isAddressValid(billingAddress)) {
+                    showToast('error', 'Please complete required billing address fields.', 3500);
+                    return;
+                }
+
+                if (shipToDifferentAddress && !isAddressValid(shippingAddress)) {
+                    showToast('error', 'Please complete required shipping address fields.', 3500);
                     return;
                 }
 
@@ -331,7 +512,9 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
                 const res = await userService.createOrder({
                     items: cartItems,
                     total: cartTotal,
-                    shipping: shippingDetails,
+                    billingAddress,
+                    shippingAddress,
+                    shipToDifferentAddress,
                 });
                 const order = res?.order || { id: `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
                 setConfirmedOrder({ items: cartItems, total: cartTotal, orderNumber: order.id });
@@ -374,8 +557,12 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
                 <h1 className="text-4xl font-exo text-center font-bold mb-12">Shopping Cart</h1>
                 {checkoutState === 'shipping' ? (
                     <ShippingDetailsView
-                        shipping={shippingDetails}
-                        onChange={setShippingDetails}
+                        billingAddress={billingAddress}
+                        onChangeBilling={setBillingAddress}
+                        shippingAddress={shippingAddress}
+                        onChangeShipping={setShippingAddress}
+                        shipToDifferentAddress={shipToDifferentAddress}
+                        onToggleShipToDifferentAddress={setShipToDifferentAddress}
                         onBack={() => setCheckoutState('cart')}
                         onPlaceOrder={handlePlaceOrder}
                         isProcessing={isProcessing}
