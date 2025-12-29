@@ -16,8 +16,7 @@ const ShippingAddressSection: React.FC<{
   onToggleShipToDifferentAddress,
   disabled,
 }) => {
-  const showAddress = shipToDifferentAddress ? shippingAddress : billingAddress;
-  const fieldsDisabled = disabled || !shipToDifferentAddress;
+  const fieldsDisabled = disabled;
 
   return (
     <div className="bg-nexus-dark/50 p-6 rounded-lg border border-nexus-gray">
@@ -38,12 +37,18 @@ const ShippingAddressSection: React.FC<{
       <h2 className="text-2xl font-exo font-bold text-white mb-2">Shipping Address</h2>
       <p className="text-gray-400 mb-6">Where your order will be delivered.</p>
 
-      <AddressFields
-        prefix="shipping"
-        address={showAddress}
-        onChange={shipToDifferentAddress ? onChangeShipping : () => {}}
-        disabled={fieldsDisabled}
-      />
+      {shipToDifferentAddress ? (
+        <AddressFields
+          prefix="shipping"
+          address={shippingAddress}
+          onChange={onChangeShipping}
+          disabled={fieldsDisabled}
+        />
+      ) : (
+        <div className="text-sm text-gray-400">
+          Shipping address is the same as billing address.
+        </div>
+      )}
     </div>
   );
 };

@@ -109,6 +109,28 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
     );
   }
 
+  if (cartItems.length === 0) {
+    return (
+      <section className="py-20 min-h-[80vh] flex items-center justify-center">
+        <Toast message={toast.message} type={toast.type} visible={toast.visible} />
+        <div className="container mx-auto px-6">
+          <div className="text-center bg-nexus-dark/50 p-8 sm:p-12 rounded-lg border border-nexus-gray max-w-2xl mx-auto">
+            <h2 className="text-2xl font-exo font-bold text-white mb-2">Your cart is empty</h2>
+            <p className="text-gray-400 mb-8">Please go back to your cart to continue.</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <GamingButton onClick={() => navigateTo('/products')} variant="cta">
+                Go Shopping
+              </GamingButton>
+              <GamingButton onClick={() => navigateTo('/cart')} variant="secondary">
+                Go to Cart
+              </GamingButton>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <section className="py-16 min-h-[80vh]">
@@ -144,13 +166,6 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
               disabled={isProcessing}
             />
             <PaymentInfoSection />
-
-            <div className="flex gap-4">
-              <GamingButton onClick={() => navigateTo('/cart')} variant="secondary" disabled={isProcessing}>Back to Cart</GamingButton>
-              <GamingButton onClick={handlePlaceOrder} variant="cta" disabled={isProcessing}>
-                {isProcessing ? 'Processing...' : 'Place Order'}
-              </GamingButton>
-            </div>
           </div>
 
           <div className="lg:col-span-1">
@@ -173,6 +188,20 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
 
               <div className="mt-6 text-sm text-gray-400">
                 First name, last name, street address, town/city, and postcode are required.
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <GamingButton
+                  onClick={() => navigateTo('/cart')}
+                  variant="secondary"
+                  disabled={isProcessing}
+                  className="w-full"
+                >
+                  Back to Cart
+                </GamingButton>
+                <GamingButton onClick={handlePlaceOrder} variant="cta" disabled={isProcessing} className="w-full">
+                  {isProcessing ? 'Processing...' : 'Place Order'}
+                </GamingButton>
               </div>
             </div>
           </div>
