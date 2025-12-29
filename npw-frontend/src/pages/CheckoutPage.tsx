@@ -20,6 +20,7 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
   const [billingAddress, setBillingAddress] = useState<Address>(() => defaultAddress());
   const [shippingAddress, setShippingAddress] = useState<Address>(() => defaultAddress());
   const [shipToDifferentAddress, setShipToDifferentAddress] = useState(false);
+  const [deliveryCharge, setDeliveryCharge] = useState(0);
 
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
     visible: false,
@@ -48,6 +49,30 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
 
     loadAccount();
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setDeliveryCharge(0);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await userService.getPaymentSettings();
+        const s: any = res?.settings;
+        const next = Math.max(0, Number(s?.deliveryCharge) || 0);
+        if (!cancelled) setDeliveryCharge(next);
+      } catch (err) {
+        console.warn('Failed to load payment settings', err);
+        if (!cancelled) setDeliveryCharge(0);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
+
+  const grandTotal = cartTotal + deliveryCharge;
 
   const handleContinueToPayment = () => {
     (async () => {
@@ -180,12 +205,16 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
                   <span>Rs {cartTotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Shipping</span>
-                  <span className="font-bold text-green-400">FREE</span>
+                  <span className="text-gray-400">Delivery</span>
+                  <span>
+                    {deliveryCharge === 0
+                      ? <span className="font-bold text-green-400">FREE</span>
+                      : `Rs ${deliveryCharge.toLocaleString()}`}
+                  </span>
                 </div>
                 <div className="border-t border-nexus-gray pt-4 mt-4 flex justify-between font-bold text-xl">
                   <span className="font-exo text-white">Order Total</span>
-                  <span className="text-nexus-blue">Rs {cartTotal.toLocaleString()}</span>
+                  <span className="text-nexus-blue">Rs {grandTotal.toLocaleString()}</span>
                 </div>
               </div>
 

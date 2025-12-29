@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
+import { userService } from '../services/userService';
 import GamingButton from '../components/GamingButton';
 import Toast from '../components/Toast';
 import type { CartItem } from '../types';
@@ -134,27 +136,32 @@ const CartItemRow: React.FC<{
 };
 
 const OrderSummary: React.FC<{
-    total: number;
+    subtotal: number;
+    deliveryCharge: number;
     onClearCart: () => void;
     onCheckout: () => void;
     isProcessing: boolean;
     checkoutDisabled: boolean;
-}> = ({ total, onClearCart, onCheckout, isProcessing, checkoutDisabled }) => (
+}> = ({ subtotal, deliveryCharge, onClearCart, onCheckout, isProcessing, checkoutDisabled }) => (
     <div className="lg:col-span-1">
         <div className="bg-nexus-dark p-6 rounded-lg sticky top-24 border border-nexus-gray">
             <h2 className="text-xl font-exo font-bold text-white mb-6 border-b border-nexus-gray pb-4">Order Summary</h2>
             <div className="space-y-4 text-nexus-light">
                 <div className="flex justify-between">
                     <span className="text-gray-400">Subtotal</span>
-                    <span>Rs {total.toLocaleString()}</span>
+                    <span>Rs {subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-gray-400">Shipping</span>
-                    <span className="font-bold text-green-400">FREE</span>
+                    <span className="text-gray-400">Delivery</span>
+                    <span>
+                        {deliveryCharge === 0
+                            ? <span className="font-bold text-green-400">FREE</span>
+                            : `Rs ${deliveryCharge.toLocaleString()}`}
+                    </span>
                 </div>
                  <div className="border-t border-nexus-gray pt-4 mt-4 flex justify-between font-bold text-xl">
                     <span className="font-exo text-white">Order Total</span>
-                    <span className="text-nexus-blue">Rs {total.toLocaleString()}</span>
+                    <span className="text-nexus-blue">Rs {(subtotal + deliveryCharge).toLocaleString()}</span>
                 </div>
             </div>
              <GamingButton onClick={onCheckout} disabled={isProcessing || checkoutDisabled} className="w-full mt-8" variant="cta">
@@ -181,14 +188,38 @@ const OrderSummary: React.FC<{
 );
 
 const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateTo }) => {
+    const { user } = useAuth();
     const { cartItems, increaseQuantity, decreaseQuantity, removeFromCart, cartTotal, clearCart } = useCart();
     const [isProcessing] = useState(false);
     const [unavailableIds, setUnavailableIds] = useState<Set<string>>(() => new Set());
+    const [deliveryCharge, setDeliveryCharge] = useState(0);
     const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
         visible: false,
         message: '',
         type: 'success',
     });
+
+    useEffect(() => {
+        const uid = user?.id;
+        if (!uid) {
+            setDeliveryCharge(0);
+            return;
+        }
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await userService.getPaymentSettings();
+                const s: any = res?.settings;
+                const next = Math.max(0, Number(s?.deliveryCharge) || 0);
+                if (!cancelled) setDeliveryCharge(next);
+            } catch {
+                if (!cancelled) setDeliveryCharge(0);
+            }
+        })();
+
+        return () => { cancelled = true; };
+    }, [user?.id]);
 
     const cartIdsKey = useMemo(
         () => cartItems
@@ -315,7 +346,8 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
                     </div>
                     {/* Order Summary */}
                     <OrderSummary
-                        total={cartTotal}
+                        subtotal={cartTotal}
+                        deliveryCharge={deliveryCharge}
                         onClearCart={clearCart}
                         onCheckout={handleProceedToCheckout}
                         isProcessing={isProcessing}
