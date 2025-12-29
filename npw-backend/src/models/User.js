@@ -60,6 +60,8 @@ const userSchema = new mongoose.Schema({
     id: String,
     items: [{ id: String, name: String, price: String, quantity: Number }],
     total: Number,
+    inventoryDeductedAt: { type: Date },
+    inventoryReleasedAt: { type: Date },
     billingAddress: { type: addressSchema, default: () => ({}) },
     shippingAddress: { type: addressSchema, default: () => ({}) },
     shipToDifferentAddress: { type: Boolean, default: false },

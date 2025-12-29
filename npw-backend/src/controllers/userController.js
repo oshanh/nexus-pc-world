@@ -71,6 +71,126 @@ const summarizeRequestedQuantities = (items) => {
   return { ok: true, requestedById };
 };
 
+const buildInsufficientStockPayload = async (requestedById) => {
+  const ids = Array.from(requestedById.keys());
+  const products = await Product.find({ _id: { $in: ids } }).select('_id isActive stock').lean();
+  const byId = new Map((products || []).map((p) => [String(p._id), p]));
+
+  const unavailableIds = [];
+  const insufficientStock = [];
+
+  for (const [id, requestedQty] of requestedById.entries()) {
+    const p = byId.get(String(id));
+    const isActive = p && p.isActive !== false;
+    if (!p || !isActive) {
+      unavailableIds.push(id);
+      continue;
+    }
+
+    const availableStock = Number(p.stock);
+    const safeAvailable = Number.isFinite(availableStock) ? Math.max(0, Math.floor(availableStock)) : 0;
+    if (requestedQty > safeAvailable) {
+      insufficientStock.push({ id, requestedQty, availableStock: safeAvailable });
+    }
+  }
+
+  return {
+    message: 'Some items in your order do not have enough stock. Please update quantities in your cart and try again.',
+    insufficientStock,
+    unavailableIds: unavailableIds.length > 0 ? unavailableIds : insufficientStock.map((x) => x.id)
+  };
+};
+
+const decrementStockForOrder = async (requestedById) => {
+  const decremented = [];
+  try {
+    for (const [id, requestedQty] of requestedById.entries()) {
+      // eslint-disable-next-line no-await-in-loop
+      const updated = await Product.findOneAndUpdate(
+        { _id: id, isActive: { $ne: false }, stock: { $gte: requestedQty } },
+        { $inc: { stock: -requestedQty } },
+        { new: false }
+      );
+      if (!updated) {
+        throw new Error(`INSUFFICIENT_STOCK:${id}`);
+      }
+      decremented.push({ id, qty: requestedQty });
+    }
+    return { ok: true, decremented };
+  } catch (error_) {
+    // rollback
+    try {
+      await Promise.all(
+        decremented.map((d) => Product.updateOne({ _id: d.id }, { $inc: { stock: d.qty } }))
+      );
+    } catch (error_) {
+      console.error('Stock rollback failed', error_);
+    }
+    return { ok: false, decremented, error: error_ };
+  }
+};
+
+const allowedPaymentMethods = new Set(['cod', 'bank_transfer', 'payhere']);
+
+const buildSafeAddressesForOrder = (user, billingAddress, shippingAddress, shipToDifferentAddress) => {
+  const wantsDifferentShipping = Boolean(shipToDifferentAddress);
+
+  const safeBilling = billingAddress
+    ? sanitizeAddress(billingAddress)
+    : getUserBillingAddressSnapshot(user);
+
+  let safeShipping = safeBilling;
+  if (wantsDifferentShipping) {
+    safeShipping = shippingAddress
+      ? sanitizeAddress(shippingAddress)
+      : getUserShippingAddressSnapshot(user, safeBilling);
+  }
+
+  return { wantsDifferentShipping, safeBilling, safeShipping };
+};
+
+const buildSafePaymentForOrder = ({ paymentMethod, deliveryCharge, bankTransferReceiptUrl, bankTransferReceiptFilename, bankTransferReceiptMimeType }) => {
+  const safePaymentMethod = allowedPaymentMethods.has(String(paymentMethod)) ? String(paymentMethod) : 'cod';
+  const numericDeliveryCharge = Number(deliveryCharge);
+  const safeDeliveryCharge = Number.isFinite(numericDeliveryCharge) ? numericDeliveryCharge : 0;
+
+  let paymentStatus = 'pending';
+  if (safePaymentMethod === 'bank_transfer') {
+    paymentStatus = bankTransferReceiptUrl ? 'awaiting_confirmation' : 'awaiting_receipt';
+  }
+
+  return {
+    method: safePaymentMethod,
+    status: paymentStatus,
+    deliveryCharge: safeDeliveryCharge,
+    bankTransferReceiptUrl: sanitizeString(bankTransferReceiptUrl, 500),
+    bankTransferReceiptFilename: sanitizeString(bankTransferReceiptFilename, 200),
+    bankTransferReceiptMimeType: sanitizeString(bankTransferReceiptMimeType, 100),
+    bankTransferReceiptUploadedAt: bankTransferReceiptUrl ? new Date() : undefined
+  };
+};
+
+const rollbackStockFromRequested = async (requestedById) => {
+  await Promise.all(
+    Array.from(requestedById.entries()).map(([id, qty]) => Product.updateOne({ _id: id }, { $inc: { stock: qty } }))
+  );
+};
+
+const saveOrderAndClearCart = async (user, order, requestedById) => {
+  user.orders.unshift(order);
+  user.cart = [];
+  try {
+    await user.save();
+  } catch (error_) {
+    try {
+      await rollbackStockFromRequested(requestedById);
+    } catch (error_) {
+      console.error('Stock rollback after save failure failed', error_);
+    }
+    throw error_;
+  }
+};
+
 const validateOrderItemsAreAvailable = async (items) => {
   const summary = summarizeRequestedQuantities(items);
   if (!summary.ok) return summary;
@@ -119,7 +239,7 @@ const validateOrderItemsAreAvailable = async (items) => {
       };
     }
 
-    return { ok: true };
+    return { ok: true, requestedById };
   } catch (err) {
     console.error(err);
     return {
@@ -212,31 +332,32 @@ const createOrder = async (req, res) => {
     const itemsCheck = await validateOrderItemsAreAvailable(items);
     if (!itemsCheck.ok) return res.status(itemsCheck.status).json(itemsCheck.payload);
 
-    const wantsDifferentShipping = Boolean(shipToDifferentAddress);
-
-    const safeBilling = billingAddress
-      ? sanitizeAddress(billingAddress)
-      : getUserBillingAddressSnapshot(user);
-
-    let safeShipping = safeBilling;
-    if (wantsDifferentShipping) {
-      safeShipping = shippingAddress
-        ? sanitizeAddress(shippingAddress)
-        : getUserShippingAddressSnapshot(user, safeBilling);
+    const requestedById = itemsCheck.requestedById;
+    if (!requestedById || !(requestedById instanceof Map)) {
+      return res.status(400).json({ message: 'Some order items are invalid. Please refresh your cart and try again.' });
     }
 
-    // Do not hard-require shipping yet (frontend checkout step comes next),
-    // but persist a snapshot if available.
-
-    const allowedPaymentMethods = new Set(['cod', 'bank_transfer', 'payhere']);
-    const safePaymentMethod = allowedPaymentMethods.has(String(paymentMethod)) ? String(paymentMethod) : 'cod';
-    const numericDeliveryCharge = Number(deliveryCharge);
-    const safeDeliveryCharge = Number.isFinite(numericDeliveryCharge) ? numericDeliveryCharge : 0;
-
-    let paymentStatus = 'pending';
-    if (safePaymentMethod === 'bank_transfer') {
-      paymentStatus = bankTransferReceiptUrl ? 'awaiting_confirmation' : 'awaiting_receipt';
+    // Deduct stock atomically (protects against race conditions)
+    const stockResult = await decrementStockForOrder(requestedById);
+    if (!stockResult.ok) {
+      const payload = await buildInsufficientStockPayload(requestedById);
+      return res.status(400).json(payload);
     }
+
+    const { wantsDifferentShipping, safeBilling, safeShipping } = buildSafeAddressesForOrder(
+      user,
+      billingAddress,
+      shippingAddress,
+      shipToDifferentAddress
+    );
+
+    const payment = buildSafePaymentForOrder({
+      paymentMethod,
+      deliveryCharge,
+      bankTransferReceiptUrl,
+      bankTransferReceiptFilename,
+      bankTransferReceiptMimeType
+    });
 
     const id = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const numericTotal = Number(total);
@@ -244,27 +365,18 @@ const createOrder = async (req, res) => {
       id,
       items,
       total: Number.isFinite(numericTotal) ? numericTotal : 0,
+      inventoryDeductedAt: new Date(),
       billingAddress: safeBilling,
       shippingAddress: safeShipping,
       shipToDifferentAddress: wantsDifferentShipping,
-      payment: {
-        method: safePaymentMethod,
-        status: paymentStatus,
-        deliveryCharge: safeDeliveryCharge,
-        bankTransferReceiptUrl: sanitizeString(bankTransferReceiptUrl, 500),
-        bankTransferReceiptFilename: sanitizeString(bankTransferReceiptFilename, 200),
-        bankTransferReceiptMimeType: sanitizeString(bankTransferReceiptMimeType, 100),
-        bankTransferReceiptUploadedAt: bankTransferReceiptUrl ? new Date() : undefined
-      },
+      payment,
       createdAt: new Date(),
     };
-    user.orders.unshift(order);
-    // Optionally clear cart
-    user.cart = [];
-    await user.save();
+
+    await saveOrderAndClearCart(user, order, requestedById);
     return res.status(201).json({ order });
-  } catch (err) {
-    console.error(err);
+  } catch (error_) {
+    console.error(error_);
     return res.status(500).json({ message: 'Failed to create order' });
   }
 };

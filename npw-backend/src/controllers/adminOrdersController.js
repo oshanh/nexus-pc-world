@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Product = require('../models/Product');
 
 const allowedPaymentStatuses = new Set([
   'pending',
@@ -54,24 +55,47 @@ const updateOrderPaymentStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid payment status' });
     }
 
-    const updated = await User.findOneAndUpdate(
-      { 'orders.id': orderId },
-      { $set: { 'orders.$.payment.status': paymentStatus } },
-      { new: true, projection: { username: 1, email: 1, orders: 1 } }
-    ).lean();
+    const user = await User.findOne({ 'orders.id': orderId }).select('username email orders');
+    if (!user) return res.status(404).json({ message: 'Order not found' });
 
-    if (!updated) return res.status(404).json({ message: 'Order not found' });
-
-    const order = (updated.orders || []).find(o => o?.id === orderId);
+    const order = (user.orders || []).find(o => o?.id === orderId);
     if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    const prevStatus = String(order?.payment?.status || '');
+    order.payment = order.payment || {};
+    order.payment.status = paymentStatus;
+
+    const shouldReleaseInventory =
+      paymentStatus === 'failed' &&
+      prevStatus !== 'failed' &&
+      Boolean(order.inventoryDeductedAt) &&
+      !order.inventoryReleasedAt;
+
+    if (shouldReleaseInventory) {
+      const requestedById = new Map();
+      for (const it of order.items || []) {
+        const id = String(it?.id || '').trim();
+        const qtyNum = Number(it?.quantity);
+        const qty = Number.isFinite(qtyNum) ? Math.floor(qtyNum) : 0;
+        if (!id || qty <= 0) continue;
+        requestedById.set(id, (requestedById.get(id) || 0) + qty);
+      }
+
+      await Promise.all(
+        Array.from(requestedById.entries()).map(([id, qty]) => Product.updateOne({ _id: id }, { $inc: { stock: qty } }))
+      );
+      order.inventoryReleasedAt = new Date();
+    }
+
+    await user.save();
 
     return res.json({
       order: {
         ...order,
         customer: {
-          id: String(updated._id),
-          username: updated.username,
-          email: updated.email
+          id: String(user._id),
+          username: user.username,
+          email: user.email
         }
       }
     });
