@@ -1,21 +1,32 @@
 const path = require('node:path');
 const User = require('../models/User');
+const PaymentSettings = require('../models/PaymentSettings');
 
 const receiptsDir = path.join(__dirname, '..', '..', 'uploads', 'bank-receipts');
 
+const normalizeBankAccounts = (arr) => {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map((v) => {
+      const o = v && typeof v === 'object' ? v : {};
+      return {
+        bankName: String(o.bankName ?? ''),
+        accountName: String(o.accountName ?? ''),
+        accountNumber: String(o.accountNumber ?? ''),
+        branch: String(o.branch ?? ''),
+      };
+    })
+    .filter((a) => a.bankName || a.accountName || a.accountNumber || a.branch);
+};
+
 const getPaymentSettings = async (req, res) => {
   try {
-    const deliveryCharge = Number(process.env.DELIVERY_CHARGE);
+    const doc = await PaymentSettings.findOne({ key: 'default' }).lean();
 
     const settings = {
-      deliveryCharge: Number.isFinite(deliveryCharge) ? deliveryCharge : 0,
-      bankDetails: {
-        instructions: process.env.BANK_TRANSFER_INSTRUCTIONS || 'Add order number as reference when making the transfer.',
-        bankName: process.env.BANK_NAME || 'Sampath Bank',
-        accountName: process.env.BANK_ACCOUNT_NAME || 'Nexus PC World Pvt Ltd',
-        accountNumber: process.env.BANK_ACCOUNT_NUMBER || '833229972223',
-        branch: process.env.BANK_BRANCH || 'Super Branch, Colombo 3',
-      }
+      deliveryCharge: doc && Number.isFinite(Number(doc.deliveryCharge)) ? Number(doc.deliveryCharge) : 0,
+      bankTransferInstructions: doc ? String(doc.bankTransferInstructions ?? '') : '',
+      bankAccounts: doc ? normalizeBankAccounts(doc.bankAccounts) : [],
     };
 
     return res.json({ settings });

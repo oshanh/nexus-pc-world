@@ -52,6 +52,15 @@ const AdminDashboard: React.FC<{ navigateTo: (path: string) => void }> = ({ navi
                 Manage Orders
               </GamingButton>
             </div>
+
+            <div className="bg-nexus-dark rounded-lg p-6 border border-nexus-purple/20 shadow-sm">
+              <h2 className="text-xl font-bold text-white mb-3">Payment Settings</h2>
+              <p className="text-gray-400 mb-4">Update delivery charges and bank transfer details.</p>
+              <GamingButton onClick={() => navigateTo('/admin/payment-settings')} variant="primary">
+                <Icon name="dot" className="h-4 w-4 mr-2" aria-hidden />
+                Payment Settings
+              </GamingButton>
+            </div>
           </div>
         </div>
       </section>

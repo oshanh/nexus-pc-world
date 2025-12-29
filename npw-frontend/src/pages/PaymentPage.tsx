@@ -20,13 +20,13 @@ type CheckoutDraft = {
 
 type PaymentSettings = {
   deliveryCharge: number;
-  bankDetails: {
-    instructions: string;
+  bankTransferInstructions: string;
+  bankAccounts: Array<{
     bankName: string;
     accountName: string;
     accountNumber: string;
     branch: string;
-  };
+  }>;
 };
 
 type UploadedReceipt = {
@@ -150,17 +150,23 @@ const PaymentPage: React.FC<{ navigateTo: (path: string) => void }> = ({ navigat
     (async () => {
       try {
         const res = await userService.getPaymentSettings();
-        const s = res?.settings;
+        const s: any = res?.settings;
         if (s && typeof s === 'object') {
+          const bankAccounts = Array.isArray(s.bankAccounts)
+            ? s.bankAccounts
+              .map((a: any) => ({
+                bankName: String(a?.bankName ?? ''),
+                accountName: String(a?.accountName ?? ''),
+                accountNumber: String(a?.accountNumber ?? ''),
+                branch: String(a?.branch ?? ''),
+              }))
+              .filter((a: any) => a.bankName || a.accountName || a.accountNumber || a.branch)
+            : [];
+
           setSettings({
             deliveryCharge: Number(s.deliveryCharge) || 0,
-            bankDetails: {
-              instructions: String(s.bankDetails?.instructions ?? ''),
-              bankName: String(s.bankDetails?.bankName ?? ''),
-              accountName: String(s.bankDetails?.accountName ?? ''),
-              accountNumber: String(s.bankDetails?.accountNumber ?? ''),
-              branch: String(s.bankDetails?.branch ?? ''),
-            },
+            bankTransferInstructions: String(s.bankTransferInstructions ?? ''),
+            bankAccounts: bankAccounts,
           });
         }
       } catch (err) {
@@ -421,20 +427,31 @@ const PaymentPage: React.FC<{ navigateTo: (path: string) => void }> = ({ navigat
                 <p className="text-gray-400 mb-6">Use the details below and upload your receipt.</p>
 
                 <div className="text-sm text-gray-300 space-y-2">
-                  {settings?.bankDetails?.instructions && (
-                    <div className="text-gray-400">{settings.bankDetails.instructions}</div>
+                  {settings?.bankTransferInstructions && (
+                    <div className="text-gray-400">{settings.bankTransferInstructions}</div>
                   )}
-                  {settings?.bankDetails?.bankName && (
-                    <div><span className="text-gray-500">Bank:</span> {settings.bankDetails.bankName}</div>
-                  )}
-                  {settings?.bankDetails?.accountName && (
-                    <div><span className="text-gray-500">Account Name:</span> {settings.bankDetails.accountName}</div>
-                  )}
-                  {settings?.bankDetails?.accountNumber && (
-                    <div><span className="text-gray-500">Account Number:</span> {settings.bankDetails.accountNumber}</div>
-                  )}
-                  {settings?.bankDetails?.branch && (
-                    <div><span className="text-gray-500">Branch:</span> {settings.bankDetails.branch}</div>
+                  {(settings?.bankAccounts || []).length > 0 ? (
+                    <div className="space-y-3">
+                      {(settings?.bankAccounts || []).map((a) => (
+                        <div key={`${a.bankName}-${a.accountNumber}-${a.branch}-${a.accountName}`} className="rounded-lg border border-nexus-gray/50 bg-nexus-dark/30 p-3">
+                          
+                          {a.bankName && (
+                            <div><span className="text-gray-500">Bank Name:</span> {a.bankName}</div>
+                          )}
+                          {a.accountName && (
+                            <div><span className="text-gray-500">Account Name:</span> {a.accountName}</div>
+                          )}
+                          {a.accountNumber && (
+                            <div><span className="text-gray-500">Account Number:</span> {a.accountNumber}</div>
+                          )}
+                          {a.branch && (
+                            <div><span className="text-gray-500">Branch:</span> {a.branch}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-500">Bank details are not configured yet.</div>
                   )}
                 </div>
 
@@ -452,8 +469,17 @@ const PaymentPage: React.FC<{ navigateTo: (path: string) => void }> = ({ navigat
                       setBankReceiptFile(f);
                       setUploadedReceipt(null);
                     }}
-                    className="block w-full text-sm text-gray-300"
+                    className={
+                      'block w-full text-sm text-gray-300 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ' +
+                      'file:mr-4 file:rounded-md file:border-0 file:px-4 file:py-2 file:text-sm file:font-semibold ' +
+                      'file:bg-nexus-blue/20 file:text-nexus-blue hover:file:bg-nexus-blue/30 file:cursor-pointer'
+                    }
                   />
+                  {!uploadedReceipt?.filename && bankReceiptFile?.name ? (
+                    <div className="mt-2 text-sm text-gray-400">
+                      Selected: {bankReceiptFile.name}
+                    </div>
+                  ) : null}
                   {uploadedReceipt?.filename && (
                     <div className="mt-2 text-sm text-green-400">
                       Receipt uploaded: {uploadedReceipt.filename}

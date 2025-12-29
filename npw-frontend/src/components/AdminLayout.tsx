@@ -16,10 +16,10 @@ const NavItem: React.FC<{ to: string; label: string; collapsed: boolean; active?
         aria-label={label}
         aria-current={active ? 'page' : undefined}
       >
-        <span className={`w-6 h-6 flex items-center justify-center text-sm ${collapsed ? '' : ''}`}>
+        <span className="w-6 h-6 flex items-center justify-center text-sm">
           <Icon name={icon || 'dot'} className="w-4 h-4" aria-hidden />
         </span>
-        <span className={`truncate transition-all duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[120px]'}`} aria-hidden={collapsed}>
+        <span className={`truncate transition-all duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-30'}`} aria-hidden={collapsed}>
           {label}
         </span>
       </GamingButton>
@@ -34,6 +34,7 @@ const AdminLayout: React.FC<{ title?: string; children: React.ReactNode }> = ({ 
       const raw = localStorage.getItem(STORAGE_KEY);
       return raw === 'true';
     } catch (err) {
+      console.warn('Failed to read admin sidebar state', err);
       return false;
     }
   });
@@ -44,7 +45,7 @@ const AdminLayout: React.FC<{ title?: string; children: React.ReactNode }> = ({ 
     try {
       localStorage.setItem(STORAGE_KEY, collapsed ? 'true' : 'false');
     } catch (err) {
-      // ignore
+      console.warn('Failed to persist admin sidebar state', err);
     }
   }, [collapsed]);
 
@@ -52,14 +53,14 @@ const AdminLayout: React.FC<{ title?: string; children: React.ReactNode }> = ({ 
     // brief scale animation
     setIsAnimating(true);
     setCollapsed(prev => !prev);
-    window.setTimeout(() => setIsAnimating(false), 180);
+    globalThis.setTimeout(() => setIsAnimating(false), 180);
   };
   const location = useLocation();
 
   return (
     <div className="min-h-screen flex bg-transparent">
       <aside
-        className={`flex-shrink-0 bg-nexus-dark/90 border-r border-nexus-gray/20 p-3 transition-all duration-200 transform ${isAnimating ? 'scale-95' : 'scale-100'} ${collapsed ? 'w-20' : 'w-48'}`}
+        className={`shrink-0 bg-nexus-dark/90 border-r border-nexus-gray/20 p-3 transition-all duration-200 transform ${isAnimating ? 'scale-95' : 'scale-100'} ${collapsed ? 'w-20' : 'w-48'}`}
         aria-hidden={false}
       >
         <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} mb-6`}>
@@ -82,6 +83,7 @@ const AdminLayout: React.FC<{ title?: string; children: React.ReactNode }> = ({ 
           <NavItem to="/admin/products" label="Products" icon="products" collapsed={collapsed} active={location.pathname.startsWith('/admin/products')} />
           <NavItem to="/admin/users" label="Users" icon="users" collapsed={collapsed} active={location.pathname.startsWith('/admin/users')} />
           <NavItem to="/admin/orders" label="Orders" icon="orders" collapsed={collapsed} active={location.pathname.startsWith('/admin/orders')} />
+          <NavItem to="/admin/payment-settings" label="Payment Settings" icon="dot" collapsed={collapsed} active={location.pathname.startsWith('/admin/payment-settings')} />
         </nav>
 
       </aside>
