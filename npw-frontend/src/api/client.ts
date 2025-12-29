@@ -54,6 +54,25 @@ export const client = {
     }
     return response.json();
   },
+  postForm: async (endpoint: string, formData: FormData) => {
+    const csrfToken = await client._getCsrfToken();
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'X-CSRF-Token': csrfToken },
+      body: formData,
+    });
+    if (!response.ok) {
+      const errorMsg = await parseErrorResponse(response);
+      if (response.status === 403) {
+        client._csrfToken = '';
+        throw new Error(`CSRF token invalid. Please retry: ${errorMsg}`);
+      }
+      if (response.status === 401) throw new Error(`Unauthorized: ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
+    return response.json();
+  },
   put: async (endpoint: string, data: any) => {
     const csrfToken = await client._getCsrfToken();
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {

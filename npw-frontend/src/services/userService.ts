@@ -17,7 +17,16 @@ export const userService = {
 
   // Orders
   getOrders: async () => client.get('/user/orders'),
+  getAccountOrders: async () => client.get('/user/account/orders'),
   createOrder: async (payload: any) => client.post('/user/orders', payload),
+
+  // Payment
+  getPaymentSettings: async () => client.get('/user/payment/settings'),
+  uploadBankTransferReceipt: async (file: File) => {
+    const form = new FormData();
+    form.append('receipt', file);
+    return client.postForm('/user/payment/bank-transfer/receipt', form);
+  },
 
   // Account
   getAccount: async () => client.get('/user/account'),

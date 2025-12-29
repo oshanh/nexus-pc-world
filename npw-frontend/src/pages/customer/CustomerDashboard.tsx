@@ -11,8 +11,20 @@ import Toast from '../../components/Toast';
 
 interface Order {
   id: string;
-  items: any[];
+  items: Array<{ id: string; name: string; price: string | number; quantity: number }>;
   total: number;
+  billingAddress?: Partial<Address>;
+  shippingAddress?: Partial<Address>;
+  shipToDifferentAddress?: boolean;
+  payment?: {
+    method?: 'cod' | 'bank_transfer' | 'payhere' | string;
+    status?: 'pending' | 'awaiting_receipt' | 'awaiting_confirmation' | 'paid' | 'failed' | string;
+    deliveryCharge?: number;
+    bankTransferReceiptUrl?: string;
+    bankTransferReceiptFilename?: string;
+    bankTransferReceiptMimeType?: string;
+    bankTransferReceiptUploadedAt?: string;
+  };
   createdAt: string;
 }
 
@@ -206,6 +218,28 @@ const AddressForm: React.FC<{
   </div>
 );
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+const formatAddressOneLine = (address: Partial<Address> | null | undefined): string => {
+  const a = address || {};
+  const name = [a.firstName, a.lastName].filter(Boolean).join(' ').trim();
+  const parts = [
+    name,
+    a.companyName,
+    a.phone,
+    a.streetAddress,
+    a.houseNumberAndStreetName,
+    a.apartment,
+    a.city,
+    a.postcode,
+    a.country,
+  ]
+    .map(v => String(v ?? '').trim())
+    .filter(Boolean);
+
+  return parts.join(', ');
+};
+
 const DashboardHome: React.FC<{
   userName?: string;
   cartCount: number;
@@ -280,7 +314,55 @@ const OrdersView: React.FC<{ orders: Order[]; ordersError: string | null }> = ({
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex justify-end font-bold text-white">Total: Rs {order.total.toLocaleString()}</div>
+
+              <div className="mt-4 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <div className="text-gray-400">Billing address</div>
+                    <div className="text-gray-200">{formatAddressOneLine(order.billingAddress)}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-gray-400">Shipping address</div>
+                    <div className="text-gray-200">
+                      {order.shipToDifferentAddress
+                        ? formatAddressOneLine(order.shippingAddress)
+                        : 'Same as billing address'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <div className="text-gray-400">Payment method</div>
+                    <div className="text-gray-200">{String(order.payment?.method ?? 'cod').replaceAll('_', ' ')}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-400">Payment status</div>
+                    <div className="text-gray-200">{String(order.payment?.status ?? 'pending').replaceAll('_', ' ')}</div>
+                  </div>
+                  <div>
+                    <div className="text-gray-400">Delivery charge</div>
+                    <div className="text-gray-200">Rs {(Number(order.payment?.deliveryCharge) || 0).toLocaleString()}</div>
+                  </div>
+                </div>
+
+                {String(order.payment?.method) === 'bank_transfer' && (order.payment?.bankTransferReceiptUrl || order.payment?.bankTransferReceiptFilename) ? (
+                  <div className="text-sm">
+                    <div className="text-gray-400">Bank transfer receipt</div>
+                    <a
+                      className="text-nexus-purple hover:underline"
+                      href={`${API_BASE_URL}${order.payment?.bankTransferReceiptUrl || `/user/payment/bank-transfer/receipt/${encodeURIComponent(String(order.payment?.bankTransferReceiptFilename || ''))}`}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Download receipt
+                    </a>
+                  </div>
+                ) : null}
+
+                <div className="flex justify-end font-bold text-white">Total: Rs {order.total.toLocaleString()}</div>
+              </div>
             </div>
           </div>
         ))}
@@ -430,15 +512,8 @@ const CustomerDashboard: React.FC<{ navigateTo: (path: string) => void }> = ({ n
       try {
         setOrdersError(null);
 
-        if (user?.id) {
-          const res = await userService.getOrders();
-          setOrders(res.orders || []);
-          return;
-        }
-        const key = `nexusOrders:${user?.id ?? 'guest'}`;
-        const raw = localStorage.getItem(key);
-        const existing = raw ? JSON.parse(raw) : [];
-        setOrders(existing);
+        const res = await userService.getAccountOrders();
+        setOrders(res.orders || []);
       } catch (err: unknown) {
         console.error('Failed to fetch orders', err);
         setOrders([]);

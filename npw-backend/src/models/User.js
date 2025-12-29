@@ -63,6 +63,23 @@ const userSchema = new mongoose.Schema({
     billingAddress: { type: addressSchema, default: () => ({}) },
     shippingAddress: { type: addressSchema, default: () => ({}) },
     shipToDifferentAddress: { type: Boolean, default: false },
+    payment: {
+      method: {
+        type: String,
+        enum: ['cod', 'bank_transfer', 'payhere'],
+        default: 'cod'
+      },
+      status: {
+        type: String,
+        enum: ['pending', 'awaiting_receipt', 'awaiting_confirmation', 'paid', 'failed'],
+        default: 'pending'
+      },
+      deliveryCharge: { type: Number, default: 0 },
+      bankTransferReceiptUrl: { type: String, default: '' },
+      bankTransferReceiptFilename: { type: String, default: '' },
+      bankTransferReceiptMimeType: { type: String, default: '' },
+      bankTransferReceiptUploadedAt: { type: Date }
+    },
     createdAt: Date
   }]
 }, {

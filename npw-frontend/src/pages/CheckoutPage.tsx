@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { userService } from '../services/userService';
@@ -7,17 +7,14 @@ import GamingButton from '../components/GamingButton';
 import AccessDenied from '../components/AccessDenied';
 import BillingAddressSection from '../components/checkout/BillingAddressSection';
 import ShippingAddressSection from '../components/checkout/ShippingAddressSection';
-import PaymentInfoSection from '../components/checkout/PaymentInfoSection';
-import OrderConfirmation, { type ConfirmedOrder } from '../components/checkout/OrderConfirmation';
 import { defaultAddress, isAddressValid, normalizeAddress, type Address } from '../components/checkout/AddressFields';
 
 const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ navigateTo }) => {
   const { user } = useAuth();
-  const { cartItems, cartTotal, clearCart } = useCart();
+  const { cartItems, cartTotal } = useCart();
 
   const isAuthenticated = Boolean(user?.id);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
 
   const [billingAddress, setBillingAddress] = useState<Address>(() => defaultAddress());
   const [shippingAddress, setShippingAddress] = useState<Address>(() => defaultAddress());
@@ -33,8 +30,6 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
     setToast({ visible: true, type, message });
     globalThis.setTimeout(() => setToast(prev => ({ ...prev, visible: false })), timeoutMs);
   };
-
-  const orderItemsSnapshot = useMemo(() => cartItems, [cartItems]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -53,12 +48,7 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
     loadAccount();
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    if (!confirmedOrder) return;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [confirmedOrder]);
-
-  const handlePlaceOrder = () => {
+  const handleContinueToPayment = () => {
     (async () => {
       try {
         if (!isAuthenticated) return;
@@ -78,36 +68,23 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
         }
 
         setIsProcessing(true);
-
-        const res = await userService.createOrder({
-          items: cartItems,
-          total: cartTotal,
-          billingAddress,
-          shippingAddress,
-          shipToDifferentAddress,
-        });
-
-        const order = res?.order || { id: `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
-        setConfirmedOrder({ items: orderItemsSnapshot, total: cartTotal, orderNumber: String(order.id) });
-        await clearCart();
+        try {
+          localStorage.setItem(
+            `nexusCheckoutDraft:${user?.id}`,
+            JSON.stringify({ billingAddress, shippingAddress, shipToDifferentAddress })
+          );
+        } catch (err) {
+          console.warn('Failed to persist checkout draft', err);
+        }
         setIsProcessing(false);
+        navigateTo('/payment');
       } catch (err: any) {
-        console.warn('Checkout failed', err);
+        console.warn('Checkout validation failed', err);
         showToast('error', err?.message || 'Checkout failed. Please try again.');
         setIsProcessing(false);
       }
     })();
   };
-
-  if (confirmedOrder) {
-    return (
-      <section className="py-20 min-h-[80vh] flex items-center justify-center">
-        <div className="container mx-auto px-6">
-          <OrderConfirmation order={confirmedOrder} navigateTo={navigateTo} />
-        </div>
-      </section>
-    );
-  }
 
   if (cartItems.length === 0) {
     return (
@@ -165,7 +142,6 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
               onToggleShipToDifferentAddress={setShipToDifferentAddress}
               disabled={isProcessing}
             />
-            <PaymentInfoSection />
           </div>
 
           <div className="lg:col-span-1">
@@ -199,8 +175,8 @@ const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ naviga
                 >
                   Back to Cart
                 </GamingButton>
-                <GamingButton onClick={handlePlaceOrder} variant="cta" disabled={isProcessing} className="w-full">
-                  {isProcessing ? 'Processing...' : 'Place Order'}
+                <GamingButton onClick={handleContinueToPayment} variant="cta" disabled={isProcessing} className="w-full">
+                  {isProcessing ? 'Processing...' : 'Continue to Payment'}
                 </GamingButton>
               </div>
             </div>

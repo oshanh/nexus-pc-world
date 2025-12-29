@@ -101,7 +101,18 @@ const getOrders = async (req, res) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { items, total, billingAddress, shippingAddress, shipToDifferentAddress } = req.body;
+    const {
+      items,
+      total,
+      billingAddress,
+      shippingAddress,
+      shipToDifferentAddress,
+      paymentMethod,
+      deliveryCharge,
+      bankTransferReceiptUrl,
+      bankTransferReceiptFilename,
+      bankTransferReceiptMimeType
+    } = req.body;
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -125,6 +136,16 @@ const createOrder = async (req, res) => {
     // Do not hard-require shipping yet (frontend checkout step comes next),
     // but persist a snapshot if available.
 
+    const allowedPaymentMethods = new Set(['cod', 'bank_transfer', 'payhere']);
+    const safePaymentMethod = allowedPaymentMethods.has(String(paymentMethod)) ? String(paymentMethod) : 'cod';
+    const numericDeliveryCharge = Number(deliveryCharge);
+    const safeDeliveryCharge = Number.isFinite(numericDeliveryCharge) ? numericDeliveryCharge : 0;
+
+    let paymentStatus = 'pending';
+    if (safePaymentMethod === 'bank_transfer') {
+      paymentStatus = bankTransferReceiptUrl ? 'awaiting_confirmation' : 'awaiting_receipt';
+    }
+
     const id = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const numericTotal = Number(total);
     const order = {
@@ -134,6 +155,15 @@ const createOrder = async (req, res) => {
       billingAddress: safeBilling,
       shippingAddress: safeShipping,
       shipToDifferentAddress: wantsDifferentShipping,
+      payment: {
+        method: safePaymentMethod,
+        status: paymentStatus,
+        deliveryCharge: safeDeliveryCharge,
+        bankTransferReceiptUrl: sanitizeString(bankTransferReceiptUrl, 500),
+        bankTransferReceiptFilename: sanitizeString(bankTransferReceiptFilename, 200),
+        bankTransferReceiptMimeType: sanitizeString(bankTransferReceiptMimeType, 100),
+        bankTransferReceiptUploadedAt: bankTransferReceiptUrl ? new Date() : undefined
+      },
       createdAt: new Date(),
     };
     user.orders.unshift(order);

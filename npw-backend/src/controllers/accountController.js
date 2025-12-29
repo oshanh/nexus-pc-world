@@ -48,6 +48,18 @@ const getAccount = async (req, res) => {
   }
 };
 
+// GET /api/user/account/orders
+const getAccountOrders = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('orders');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    return res.json({ orders: user.orders || [] });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Failed to load orders' });
+  }
+};
+
 // PUT /api/user/account
 // Body: { username?: string, billingAddress?: Address, shippingAddress?: Address }
 const updateAccount = async (req, res) => {
@@ -94,5 +106,6 @@ const updateAccount = async (req, res) => {
 
 module.exports = {
   getAccount,
+  getAccountOrders,
   updateAccount,
 };
