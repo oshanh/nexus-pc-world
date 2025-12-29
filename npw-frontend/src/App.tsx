@@ -15,6 +15,7 @@ import CustomBuildPage from './pages/CustomBuildPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
 import WishlistPage from './pages/WishlistPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -82,6 +83,7 @@ const App: React.FC = () => {
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/wishlist" element={<WishlistPage onViewDetails={handleViewDetails} navigateTo={navigateTo} />} />
                   <Route path="/cart" element={<CartPage navigateTo={navigateTo} />} />
+                  <Route path="/checkout" element={<CheckoutPage navigateTo={navigateTo} />} />
                   <Route path="/login" element={<LoginPage navigateTo={navigateTo} />} />
                   <Route path="/signup" element={<SignupPage navigateTo={navigateTo} />} />
                   <Route path="/admin" element={<AdminDashboard navigateTo={navigateTo} />} />

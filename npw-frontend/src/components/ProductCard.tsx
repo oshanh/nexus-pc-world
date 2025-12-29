@@ -54,6 +54,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails, conte
         <GamingButton
             onClick={handleWishlistToggle}
             iconOnly={true}
+            disabled={isAdmin}
             size="sm"
             variant="secondary"
             className="!absolute !top-2 !left-2 z-10 !bg-nexus-dark/50 !shadow-none !hover:scale-110"

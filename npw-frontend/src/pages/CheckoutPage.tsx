@@ -1,0 +1,185 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
+import { userService } from '../services/userService';
+import Toast from '../components/Toast';
+import GamingButton from '../components/GamingButton';
+import AccessDenied from '../components/AccessDenied';
+import BillingAddressSection from '../components/checkout/BillingAddressSection';
+import ShippingAddressSection from '../components/checkout/ShippingAddressSection';
+import PaymentInfoSection from '../components/checkout/PaymentInfoSection';
+import OrderConfirmation, { type ConfirmedOrder } from '../components/checkout/OrderConfirmation';
+import { defaultAddress, isAddressValid, normalizeAddress, type Address } from '../components/checkout/AddressFields';
+
+const CheckoutPage: React.FC<{ navigateTo: (path: string) => void }> = ({ navigateTo }) => {
+  const { user } = useAuth();
+  const { cartItems, cartTotal, clearCart } = useCart();
+
+  const isAuthenticated = Boolean(user?.id);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
+
+  const [billingAddress, setBillingAddress] = useState<Address>(() => defaultAddress());
+  const [shippingAddress, setShippingAddress] = useState<Address>(() => defaultAddress());
+  const [shipToDifferentAddress, setShipToDifferentAddress] = useState(false);
+
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
+    visible: false,
+    message: '',
+    type: 'success',
+  });
+
+  const showToast = (type: 'success' | 'error', message: string, timeoutMs: number = 3000) => {
+    setToast({ visible: true, type, message });
+    globalThis.setTimeout(() => setToast(prev => ({ ...prev, visible: false })), timeoutMs);
+  };
+
+  const orderItemsSnapshot = useMemo(() => cartItems, [cartItems]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const loadAccount = async () => {
+      try {
+        const res = await userService.getAccount();
+        setBillingAddress(normalizeAddress(res?.account?.billingAddress));
+        setShippingAddress(normalizeAddress(res?.account?.shippingAddress));
+        setShipToDifferentAddress(false);
+      } catch (err) {
+        console.warn('Failed to load account addresses', err);
+      }
+    };
+
+    loadAccount();
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!confirmedOrder) return;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [confirmedOrder]);
+
+  const handlePlaceOrder = () => {
+    (async () => {
+      try {
+        if (!isAuthenticated) return;
+        if (cartItems.length === 0) {
+          showToast('error', 'Your cart is empty.', 2500);
+          return;
+        }
+
+        if (!isAddressValid(billingAddress)) {
+          showToast('error', 'Please complete required billing address fields.', 3500);
+          return;
+        }
+
+        if (shipToDifferentAddress && !isAddressValid(shippingAddress)) {
+          showToast('error', 'Please complete required shipping address fields.', 3500);
+          return;
+        }
+
+        setIsProcessing(true);
+
+        const res = await userService.createOrder({
+          items: cartItems,
+          total: cartTotal,
+          billingAddress,
+          shippingAddress,
+          shipToDifferentAddress,
+        });
+
+        const order = res?.order || { id: `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
+        setConfirmedOrder({ items: orderItemsSnapshot, total: cartTotal, orderNumber: String(order.id) });
+        await clearCart();
+        setIsProcessing(false);
+      } catch (err: any) {
+        console.warn('Checkout failed', err);
+        showToast('error', err?.message || 'Checkout failed. Please try again.');
+        setIsProcessing(false);
+      }
+    })();
+  };
+
+  if (confirmedOrder) {
+    return (
+      <section className="py-20 min-h-[80vh] flex items-center justify-center">
+        <div className="container mx-auto px-6">
+          <OrderConfirmation order={confirmedOrder} navigateTo={navigateTo} />
+        </div>
+      </section>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <section className="py-16 min-h-[80vh]">
+        <div className="container mx-auto px-6">
+          <AccessDenied
+            title="Please log in"
+            description="You need to be logged in to checkout."
+            backText="Go to Login"
+            onBack={() => navigateTo('/login')}
+            className="min-h-[60vh]"
+          />
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="py-20 min-h-[80vh]">
+      <Toast message={toast.message} type={toast.type} visible={toast.visible} />
+
+      <div className="container mx-auto px-6">
+        <h1 className="text-4xl font-exo text-center font-bold mb-12">Checkout</h1>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          <div className="lg:col-span-2 space-y-6">
+            <BillingAddressSection address={billingAddress} onChange={setBillingAddress} disabled={isProcessing} />
+            <ShippingAddressSection
+              billingAddress={billingAddress}
+              shippingAddress={shippingAddress}
+              onChangeShipping={setShippingAddress}
+              shipToDifferentAddress={shipToDifferentAddress}
+              onToggleShipToDifferentAddress={setShipToDifferentAddress}
+              disabled={isProcessing}
+            />
+            <PaymentInfoSection />
+
+            <div className="flex gap-4">
+              <GamingButton onClick={() => navigateTo('/cart')} variant="secondary" disabled={isProcessing}>Back to Cart</GamingButton>
+              <GamingButton onClick={handlePlaceOrder} variant="cta" disabled={isProcessing}>
+                {isProcessing ? 'Processing...' : 'Place Order'}
+              </GamingButton>
+            </div>
+          </div>
+
+          <div className="lg:col-span-1">
+            <div className="bg-nexus-dark p-6 rounded-lg sticky top-24 border border-nexus-gray">
+              <h2 className="text-xl font-exo font-bold text-white mb-6 border-b border-nexus-gray pb-4">Order Summary</h2>
+              <div className="space-y-4 text-nexus-light">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Subtotal</span>
+                  <span>Rs {cartTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Shipping</span>
+                  <span className="font-bold text-green-400">FREE</span>
+                </div>
+                <div className="border-t border-nexus-gray pt-4 mt-4 flex justify-between font-bold text-xl">
+                  <span className="font-exo text-white">Order Total</span>
+                  <span className="text-nexus-blue">Rs {cartTotal.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div className="mt-6 text-sm text-gray-400">
+                First name, last name, street address, town/city, and postcode are required.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default CheckoutPage;
