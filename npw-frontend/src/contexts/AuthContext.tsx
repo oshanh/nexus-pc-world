@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import { authService } from '../services/authService';
 
 export interface User {
@@ -82,14 +82,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateProfile = (newName: string) => {
+  const updateProfile = useCallback((newName: string) => {
     setUser(prev => {
       if (!prev) return prev;
+      if (prev.name === newName) return prev;
       const updated = { ...prev, name: newName };
       try { localStorage.setItem('nexusUser', JSON.stringify(updated)); } catch { /* ignore */ }
       return updated;
     });
-  };
+  }, []);
 
   const signup = async (name: string, email: string, password: string): Promise<User> => {
     setIsLoading(true);
@@ -129,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     updateProfile,
     isLoading,
-  }), [user, isLoading, adminMode]);
+  }), [user, isLoading, adminMode, updateProfile]);
 
   return (
     <AuthContext.Provider value={value}>

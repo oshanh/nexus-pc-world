@@ -15,6 +15,8 @@ import CustomBuildPage from './pages/CustomBuildPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import PaymentPage from './pages/PaymentPage';
 import WishlistPage from './pages/WishlistPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -22,6 +24,7 @@ import AdminProducts from './pages/admin/AdminProducts';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminOrders from './pages/admin/AdminOrders';
+import AdminPaymentSettingsPage from './pages/admin/AdminPaymentSettings';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import GamingButton from './components/GamingButton';
 
@@ -73,7 +76,7 @@ const App: React.FC = () => {
           <CartProvider>
             <div className="min-h-screen flex flex-col">
               <Header currentRoute={location.pathname} navigateTo={navigateTo} />
-              <main className="flex-grow">
+              <main className="grow">
                 <Routes>
                   <Route path="/" element={<HomePage onViewDetails={handleViewDetails} navigateTo={navigateTo} />} />
                   <Route path="/products" element={<ProductsPage onViewDetails={handleViewDetails} />} />
@@ -82,13 +85,16 @@ const App: React.FC = () => {
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/wishlist" element={<WishlistPage onViewDetails={handleViewDetails} navigateTo={navigateTo} />} />
                   <Route path="/cart" element={<CartPage navigateTo={navigateTo} />} />
+                  <Route path="/checkout" element={<CheckoutPage navigateTo={navigateTo} />} />
+                  <Route path="/payment" element={<PaymentPage navigateTo={navigateTo} />} />
                   <Route path="/login" element={<LoginPage navigateTo={navigateTo} />} />
                   <Route path="/signup" element={<SignupPage navigateTo={navigateTo} />} />
                   <Route path="/admin" element={<AdminDashboard navigateTo={navigateTo} />} />
                   <Route path="/admin/products" element={<AdminProducts navigateTo={navigateTo} />} />
                   <Route path="/admin/users" element={<AdminUsers />} />
                   <Route path="/admin/orders" element={<AdminOrders />} />
-                  <Route path="/account" element={<CustomerDashboard navigateTo={navigateTo} />} />
+                  <Route path="/admin/payment-settings" element={<AdminPaymentSettingsPage navigateTo={navigateTo} />} />
+                  <Route path="/account/*" element={<CustomerDashboard navigateTo={navigateTo} />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>

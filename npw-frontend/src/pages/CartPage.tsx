@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { useCart } from '../contexts/CartContext';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import { userService } from '../services/userService';
 import GamingButton from '../components/GamingButton';
+import Toast from '../components/Toast';
 import type { CartItem } from '../types';
+import { productService } from '../services/productService';
 
 const parsePrice = (price: string | number): number => {
     if (typeof price === 'number') return price;
@@ -63,16 +65,18 @@ const OrderConfirmation: React.FC<{ order: ConfirmedOrder; navigateTo: (path: st
 
 const CartItemRow: React.FC<{
     product: CartItem;
-    onUpdateQuantity: (id: number, qty: number) => void;
-    onRemove: (id: number) => void;
-}> = ({ product, onUpdateQuantity, onRemove }) => {
+    isUnavailable: boolean;
+    onIncrease: (id: string) => void;
+    onDecrease: (id: string) => void;
+    onRemove: (id: string) => void;
+}> = ({ product, isUnavailable, onIncrease, onDecrease, onRemove }) => {
     const firstImageUrl = product.imageUrls?.find((u) => u?.trim());
 
     return (
-        <div className="bg-nexus-dark p-4 rounded-lg md:grid md:grid-cols-12 md:gap-4 md:items-center border border-nexus-gray/50">
+        <div className={`bg-nexus-dark p-4 rounded-lg md:grid md:grid-cols-12 md:gap-4 md:items-center border border-nexus-gray/50 ${isUnavailable ? 'opacity-70' : ''}`}>
         {/* Product Info */}
         <div className="md:col-span-5 flex items-center gap-4">
-            <div className="w-20 h-20 flex-shrink-0">
+            <div className="w-20 h-20 shrink-0">
                 {firstImageUrl ? (
                     <img
                         src={firstImageUrl}
@@ -86,8 +90,18 @@ const CartItemRow: React.FC<{
                 )}
             </div>
             <div>
-                <p className="font-bold text-white">{product.name}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-bold text-white">{product.name}</p>
+                    {isUnavailable ? (
+                        <span className="text-xs font-bold uppercase tracking-wide px-2 py-1 rounded bg-nexus-gray/40 text-gray-300 border border-nexus-gray/60">
+                            Unavailable
+                        </span>
+                    ) : null}
+                </div>
                 <p className="text-sm text-gray-400">{product.subCategory || product.category}</p>
+                {isUnavailable ? (
+                    <p className="text-sm text-red-400 mt-1">This product is no longer available. Please remove it to continue.</p>
+                ) : null}
             </div>
         </div>
         
@@ -101,9 +115,9 @@ const CartItemRow: React.FC<{
         <div className="mt-4 md:mt-0 md:col-span-3 flex justify-between md:justify-center items-center">
              <span className="md:hidden text-gray-400 font-bold">Quantity</span>
             <div className="flex items-center">
-                <GamingButton onClick={() => onUpdateQuantity(Number(product.id), product.quantity - 1)} size="sm" iconOnly={true} className="!h-8 !w-8">-</GamingButton>
+                <GamingButton onClick={() => onDecrease(product.id)} disabled={isUnavailable} size="sm" iconOnly={true} className="h-8! w-8!">-</GamingButton>
                 <span className="w-12 text-center font-bold text-white text-lg">{product.quantity}</span>
-                <GamingButton onClick={() => onUpdateQuantity(Number(product.id), product.quantity + 1)} size="sm" iconOnly={true} className="!h-8 !w-8">+</GamingButton>
+                <GamingButton onClick={() => onIncrease(product.id)} disabled={isUnavailable} size="sm" iconOnly={true} className="h-8! w-8!">+</GamingButton>
             </div>
         </div>
 
@@ -112,7 +126,7 @@ const CartItemRow: React.FC<{
             <span className="md:hidden text-gray-400 font-bold">Total</span>
             <div className="flex items-center gap-4">
                 <span className="font-mono font-bold text-white">Rs {(parsePrice(product.price) * product.quantity).toLocaleString()}</span>
-                <GamingButton onClick={() => onRemove(Number(product.id))} iconOnly={true} size="sm" variant="danger" aria-label={`Remove ${product.name} from cart`}>
+                <GamingButton onClick={() => onRemove(product.id)} iconOnly={true} size="sm" variant="danger" aria-label={`Remove ${product.name} from cart`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                 </GamingButton>
             </div>
@@ -122,29 +136,35 @@ const CartItemRow: React.FC<{
 };
 
 const OrderSummary: React.FC<{
-    total: number;
+    subtotal: number;
+    deliveryCharge: number;
     onClearCart: () => void;
     onCheckout: () => void;
     isProcessing: boolean;
-}> = ({ total, onClearCart, onCheckout, isProcessing }) => (
+    checkoutDisabled: boolean;
+}> = ({ subtotal, deliveryCharge, onClearCart, onCheckout, isProcessing, checkoutDisabled }) => (
     <div className="lg:col-span-1">
         <div className="bg-nexus-dark p-6 rounded-lg sticky top-24 border border-nexus-gray">
             <h2 className="text-xl font-exo font-bold text-white mb-6 border-b border-nexus-gray pb-4">Order Summary</h2>
             <div className="space-y-4 text-nexus-light">
                 <div className="flex justify-between">
                     <span className="text-gray-400">Subtotal</span>
-                    <span>Rs {total.toLocaleString()}</span>
+                    <span>Rs {subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-gray-400">Shipping</span>
-                    <span className="font-bold text-green-400">FREE</span>
+                    <span className="text-gray-400">Delivery</span>
+                    <span>
+                        {deliveryCharge === 0
+                            ? <span className="font-bold text-green-400">FREE</span>
+                            : `Rs ${deliveryCharge.toLocaleString()}`}
+                    </span>
                 </div>
                  <div className="border-t border-nexus-gray pt-4 mt-4 flex justify-between font-bold text-xl">
                     <span className="font-exo text-white">Order Total</span>
-                    <span className="text-nexus-blue">Rs {total.toLocaleString()}</span>
+                    <span className="text-nexus-blue">Rs {(subtotal + deliveryCharge).toLocaleString()}</span>
                 </div>
             </div>
-             <GamingButton onClick={onCheckout} disabled={isProcessing} className="w-full mt-8" variant="cta">
+             <GamingButton onClick={onCheckout} disabled={isProcessing || checkoutDisabled} className="w-full mt-8" variant="cta">
                 {isProcessing ? (
                     <div className="flex items-center justify-center gap-2">
                         <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -157,6 +177,9 @@ const OrderSummary: React.FC<{
                     'Proceed to Checkout'
                 )}
             </GamingButton>
+            {checkoutDisabled ? (
+                <div className="mt-3 text-sm text-red-400">Remove unavailable items to proceed.</div>
+            ) : null}
             <GamingButton onClick={onClearCart} variant="danger" size="sm" className="w-full mt-4" disabled={isProcessing}>
                 Clear Cart
             </GamingButton>
@@ -165,60 +188,127 @@ const OrderSummary: React.FC<{
 );
 
 const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateTo }) => {
-    const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
-    
-    type CheckoutState = 'cart' | 'processing' | 'confirmed';
-    const [checkoutState, setCheckoutState] = useState<CheckoutState>('cart');
-    const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
-
     const { user } = useAuth();
+    const { cartItems, increaseQuantity, decreaseQuantity, removeFromCart, cartTotal, clearCart } = useCart();
+    const [isProcessing] = useState(false);
+    const [unavailableIds, setUnavailableIds] = useState<Set<string>>(() => new Set());
+    const [deliveryCharge, setDeliveryCharge] = useState(0);
+    const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
+        visible: false,
+        message: '',
+        type: 'success',
+    });
 
-    const handleCheckout = () => {
+    useEffect(() => {
+        const uid = user?.id;
+        if (!uid) {
+            setDeliveryCharge(0);
+            return;
+        }
+
+        let cancelled = false;
         (async () => {
-            setCheckoutState('processing');
             try {
-                if (user?.id) {
-                    // Authenticated: create order server-side
-                    const res = await userService.createOrder({ items: cartItems, total: cartTotal });
-                    const order = res?.order || { id: `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}` };
-                    setConfirmedOrder({ items: cartItems, total: cartTotal, orderNumber: order.id });
-                    // server-side createOrder clears cart; still ensure local state cleared
-                    await clearCart();
-                } else {
-                    // Guest: fallback to local persistence
-                    await new Promise((r) => setTimeout(r, 1200));
-                    const orderNumber = `NEXUS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-                    setConfirmedOrder({ items: cartItems, total: cartTotal, orderNumber });
-                    try {
-                        const key = `nexusOrders:${user?.id ?? 'guest'}`;
-                        const raw = localStorage.getItem(key);
-                        const existing = raw ? JSON.parse(raw) : [];
-                        const newOrder = { id: orderNumber, items: cartItems, total: cartTotal, createdAt: new Date().toISOString() };
-                        localStorage.setItem(key, JSON.stringify([newOrder, ...existing]));
-                    } catch (err) {
-                        console.warn('Failed to persist order', err);
-                    }
-                    clearCart();
-                }
-                setCheckoutState('confirmed');
-            } catch (err) {
-                console.warn('Checkout failed', err);
-                setCheckoutState('cart');
+                const res = await userService.getPaymentSettings();
+                const s: any = res?.settings;
+                const next = Math.max(0, Number(s?.deliveryCharge) || 0);
+                if (!cancelled) setDeliveryCharge(next);
+            } catch {
+                if (!cancelled) setDeliveryCharge(0);
             }
+        })();
+
+        return () => { cancelled = true; };
+    }, [user?.id]);
+
+    const cartIdsKey = useMemo(
+        () => cartItems
+            .map(i => `${i.id}:${Number(i.quantity) || 0}`)
+            .sort((a, b) => a.localeCompare(b))
+            .join('|'),
+        [cartItems]
+    );
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const checkAvailability = async () => {
+            if (cartItems.length === 0) {
+                if (!cancelled) setUnavailableIds(new Set());
+                return;
+            }
+
+            const ids = Array.from(new Set(cartItems.map(i => i.id)));
+            const results = await Promise.all(
+                ids.map(async (id) => {
+                    try {
+                        await productService.getById(id);
+                        return { id, ok: true };
+                    } catch {
+                        return { id, ok: false };
+                    }
+                })
+            );
+
+            const next = new Set<string>();
+            for (const r of results) {
+                if (!r.ok) next.add(r.id);
+            }
+
+            if (!cancelled) setUnavailableIds(next);
+        };
+
+        checkAvailability();
+        return () => { cancelled = true; };
+    }, [cartIdsKey]);
+
+    const hasUnavailableItems = unavailableIds.size > 0;
+
+    const showToast = (type: 'success' | 'error', message: string, timeoutMs: number = 3000) => {
+        setToast({ visible: true, type, message });
+        globalThis.setTimeout(() => setToast(prev => ({ ...prev, visible: false })), timeoutMs);
+    };
+
+    const handleProceedToCheckout = () => {
+        (async () => {
+            if (cartItems.length === 0) {
+                showToast('error', 'Your cart is empty.', 2500);
+                return;
+            }
+            if (hasUnavailableItems) {
+                showToast('error', 'Some items are unavailable. Please remove them to proceed.', 3500);
+                return;
+            }
+
+            // Stock validation happens on checkout/payment too, but we block here for faster feedback.
+            const qtyById = new Map<string, number>();
+            for (const item of cartItems) {
+                qtyById.set(item.id, (qtyById.get(item.id) || 0) + (Number(item.quantity) || 0));
+            }
+            const ids = Array.from(qtyById.keys());
+            const results = await Promise.all(
+                ids.map(async (id) => {
+                    try {
+                        const p = await productService.getById(id);
+                        const requested = qtyById.get(id) || 0;
+                        const available = Math.max(0, Number(p?.stock) || 0);
+                        return { id, ok: requested > 0 && requested <= available };
+                    } catch {
+                        return { id, ok: false };
+                    }
+                })
+            );
+
+            if (results.some(r => !r.ok)) {
+                showToast('error', 'Some items are out of stock. Please adjust quantities to proceed.', 4500);
+                return;
+            }
+
+            navigateTo('/checkout');
         })();
     };
 
-    if (checkoutState === 'confirmed' && confirmedOrder) {
-        return (
-            <section className="py-20 min-h-[80vh] flex items-center justify-center">
-                <div className="container mx-auto px-6">
-                    <OrderConfirmation order={confirmedOrder} navigateTo={navigateTo} />
-                </div>
-            </section>
-        );
-    }
-  
-    if (cartItems.length === 0 && checkoutState === 'cart') {
+    if (cartItems.length === 0) {
       return (
           <section className="py-20 min-h-[80vh] flex items-center justify-center">
               <div className="container mx-auto px-6">
@@ -230,33 +320,38 @@ const CartPage: React.FC<{ navigateTo: (path: string) => void; }> = ({ navigateT
 
     return (
         <section className="py-20 min-h-[80vh]">
+            <Toast message={toast.message} type={toast.type} visible={toast.visible} />
             <div className="container mx-auto px-6">
                 <h1 className="text-4xl font-exo text-center font-bold mb-12">Shopping Cart</h1>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     {/* Cart Items List */}
                     <div className="lg:col-span-2 space-y-4">
-                       {/* Header */}
-                       <div className="hidden md:grid grid-cols-12 gap-4 text-sm font-bold uppercase text-gray-500 px-4">
-                           <div className="col-span-5">Product</div>
-                           <div className="col-span-2 text-center">Price</div>
-                           <div className="col-span-3 text-center">Quantity</div>
-                           <div className="col-span-2 text-right">Total</div>
-                       </div>
-                      {cartItems.map((product) => (
+                    {/* Header */}
+                    <div className="hidden md:grid grid-cols-12 gap-4 text-sm font-bold uppercase text-gray-500 px-4">
+                        <div className="col-span-5">Product</div>
+                        <div className="col-span-2 text-center">Price</div>
+                        <div className="col-span-3 text-center">Quantity</div>
+                        <div className="col-span-2 text-right">Total</div>
+                    </div>
+                    {cartItems.map((product) => (
                         <CartItemRow
                             key={product.id}
                             product={product}
-                            onUpdateQuantity={(id, qty) => updateQuantity(String(id), qty)}
-                            onRemove={(id) => removeFromCart(String(id))}
+                            isUnavailable={unavailableIds.has(product.id)}
+                            onIncrease={(id) => increaseQuantity(id)}
+                            onDecrease={(id) => decreaseQuantity(id)}
+                            onRemove={(id) => removeFromCart(id)}
                         />
-                      ))}
+                    ))}
                     </div>
                     {/* Order Summary */}
                     <OrderSummary
-                        total={cartTotal}
+                        subtotal={cartTotal}
+                        deliveryCharge={deliveryCharge}
                         onClearCart={clearCart}
-                        onCheckout={handleCheckout}
-                        isProcessing={checkoutState === 'processing'}
+                        onCheckout={handleProceedToCheckout}
+                        isProcessing={isProcessing}
+                        checkoutDisabled={hasUnavailableItems}
                     />
                 </div>
             </div>

@@ -24,6 +24,26 @@ PORT=5000
 NODE_ENV=development
 ```
 
+### Web Push (admin new-order notifications)
+
+The backend can send Web Push notifications to admin browsers when a customer places an order.
+
+Add these env vars:
+
+```
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:admin@nexuspcworld.local
+```
+
+Generate keys (from `npw-backend/`):
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Note: admins must open the site once and allow notifications in the browser; after that, notifications can be delivered even if the tab/browser is closed (browser/OS support required).
+
 ## Running the Server
 
 ```bash
