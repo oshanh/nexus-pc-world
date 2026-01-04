@@ -106,6 +106,7 @@ const AdminLayout: React.FC<{ title?: string; children: React.ReactNode }> = ({ 
           <NavItem to="/admin/users" label="Users" icon="users" collapsed={collapsed} active={location.pathname.startsWith('/admin/users')} />
           <NavItem to="/admin/orders" label="Orders" icon="orders" collapsed={collapsed} active={location.pathname.startsWith('/admin/orders')} />
           <NavItem to="/admin/payment-settings" label="Payment Settings" icon="dot" collapsed={collapsed} active={location.pathname.startsWith('/admin/payment-settings')} />
+          <NavItem to="/admin/website-settings" label="Website" icon="dot" collapsed={collapsed} active={location.pathname.startsWith('/admin/website-settings')} />
         </nav>
 
       </aside>
