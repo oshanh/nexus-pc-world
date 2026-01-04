@@ -25,6 +25,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminPaymentSettingsPage from './pages/admin/AdminPaymentSettings';
+import AdminWebsiteSettingsPage from './pages/admin/AdminWebsiteSettings';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import GamingButton from './components/GamingButton';
 
@@ -94,6 +95,7 @@ const App: React.FC = () => {
                   <Route path="/admin/users" element={<AdminUsers />} />
                   <Route path="/admin/orders" element={<AdminOrders />} />
                   <Route path="/admin/payment-settings" element={<AdminPaymentSettingsPage navigateTo={navigateTo} />} />
+                  <Route path="/admin/website-settings" element={<AdminWebsiteSettingsPage navigateTo={navigateTo} />} />
                   <Route path="/account/*" element={<CustomerDashboard navigateTo={navigateTo} />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

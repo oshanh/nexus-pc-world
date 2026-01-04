@@ -63,13 +63,15 @@ const RecommendationResult: React.FC<{ recommendation: BuildRecommendation }> = 
 };
 
 const OptionCard: React.FC<{ title: string; selected: boolean; onClick: () => void; children?: React.ReactNode }> = ({ title, selected, onClick, children }) => (
-    <div
+    <button
+        type="button"
         onClick={onClick}
-        className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 text-center flex flex-col justify-center items-center h-full ${selected ? 'border-nexus-blue bg-nexus-blue/20 shadow-lg shadow-nexus-blue/30' : 'border-nexus-gray hover:border-nexus-blue/50 bg-nexus-gray/50'}`}
+        aria-pressed={selected}
+        className={`w-full p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 text-center flex flex-col justify-center items-center h-full ${selected ? 'border-nexus-blue bg-nexus-blue/20 shadow-lg shadow-nexus-blue/30' : 'border-nexus-gray hover:border-nexus-blue/50 bg-nexus-gray/50'}`}
     >
         {children}
         <p className={`font-semibold mt-2 ${selected ? 'text-nexus-blue' : 'text-nexus-light'}`}>{title}</p>
-    </div>
+    </button>
 );
 
 const steps = [
