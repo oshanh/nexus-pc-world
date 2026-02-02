@@ -27,9 +27,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigateTo }) => {
             } else {
                 navigateTo('/');
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Login error:', err);
-            setError('Failed to sign in. Please check your credentials.');
+            // Check if error is due to unverified email
+            if (err?.status === 403 && err?.data?.requiresVerification) {
+                setError('Please verify your email first.');
+                // Redirect to OTP verification page
+                setTimeout(() => {
+                    navigateTo(`/verify-otp?email=${encodeURIComponent(email)}`);
+                }, 1500);
+            } else {
+                setError('Failed to sign in. Please check your credentials.');
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -67,7 +76,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ navigateTo }) => {
                         <div>
                             <div className="flex justify-between items-center mb-2">
                                 <label htmlFor="password" className="block text-sm font-bold text-nexus-blue">Password</label>
-                                <a href="#" className="text-xs text-gray-400 hover:text-nexus-blue transition-colors">Forgot Password?</a>
+                                <button type="button" onClick={() => navigateTo('/forgot-password')} className="text-xs text-gray-400 hover:text-nexus-blue transition-colors">Forgot Password?</button>
                             </div>
                             <input
                                 type="password"

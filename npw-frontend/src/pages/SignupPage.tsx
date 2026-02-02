@@ -32,9 +32,10 @@ const SignupPage: React.FC<SignupPageProps> = ({ navigateTo }) => {
 
         try {
             await signup(name, email, password);
-            navigateTo('/'); // Redirect to home on success
+            // Redirect to OTP verification page with email and username
+            navigateTo(`/verify-otp?email=${encodeURIComponent(email)}&username=${encodeURIComponent(name)}`);
         } catch (err) {
-            setError('Failed to create an account.');
+            setError(err.message);
         } finally {
             setIsSubmitting(false);
         }

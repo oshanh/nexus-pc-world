@@ -15,9 +15,56 @@ export type Promotion = {
   createdAt?: string;
 };
 
+export type OpeningHour = {
+  days: string;
+  hours: string;
+};
+
+export type Location = {
+  label: string;
+  address: string;
+  mapUrl: string;
+};
+
+export type ContactInfo = {
+  emails: string[];
+  phoneNumbers: string[];
+  openingHours: OpeningHour[];
+  locations: Location[];
+};
+
+export type FeaturedProducts = {
+  desktopProductId: string;
+  laptopProductId: string;
+};
+
+export type Faq = {
+  id: string;
+  question: string;
+  answer: string;
+  visible: boolean;
+  sortOrder: number;
+  createdAt?: string;
+};
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  title: string;
+  bio: string;
+  imageUrl: string;
+  visible: boolean;
+  sortOrder: number;
+  createdAt?: string;
+};
+
 export type WebsiteSettings = {
   socialLinks: SocialLinks;
+  contactInfo: ContactInfo;
+  featuredProducts: FeaturedProducts;
   promotions: Promotion[];
+  faqs: Faq[];
+  teamMembers: TeamMember[];
 };
 
 export const adminWebsiteSettingsService = {
@@ -39,5 +86,30 @@ export const adminWebsiteSettingsService = {
   },
   deletePromotion: async (promotionId: string): Promise<{ ok: boolean }> => {
     return client.delete(`/admin/website/promotions/${encodeURIComponent(promotionId)}`);
+  },
+
+  createFaq: async (payload: { question: string; answer: string; visible?: boolean; sortOrder?: number }): Promise<{ faq: Faq }> => {
+    return client.post('/admin/website/faqs', payload);
+  },
+  updateFaq: async (faqId: string, patch: Partial<Pick<Faq, 'question' | 'answer' | 'visible' | 'sortOrder'>>): Promise<{ faq: Faq }> => {
+    return client.put(`/admin/website/faqs/${encodeURIComponent(faqId)}`, patch);
+  },
+  deleteFaq: async (faqId: string): Promise<{ ok: boolean }> => {
+    return client.delete(`/admin/website/faqs/${encodeURIComponent(faqId)}`);
+  },
+
+  createTeamMember: async (payload: { name: string; title?: string; bio?: string; visible?: boolean; sortOrder?: number }): Promise<{ teamMember: TeamMember }> => {
+    return client.post('/admin/website/team', payload);
+  },
+  updateTeamMember: async (memberId: string, patch: Partial<Pick<TeamMember, 'name' | 'title' | 'bio' | 'visible' | 'sortOrder'>>): Promise<{ teamMember: TeamMember }> => {
+    return client.put(`/admin/website/team/${encodeURIComponent(memberId)}`, patch);
+  },
+  deleteTeamMember: async (memberId: string): Promise<{ ok: boolean }> => {
+    return client.delete(`/admin/website/team/${encodeURIComponent(memberId)}`);
+  },
+  uploadTeamMemberPortrait: async (memberId: string, file: File): Promise<{ teamMember: TeamMember }> => {
+    const fd = new FormData();
+    fd.append('image', file);
+    return client.postForm(`/admin/website/team/${encodeURIComponent(memberId)}/portrait`, fd);
   },
 };

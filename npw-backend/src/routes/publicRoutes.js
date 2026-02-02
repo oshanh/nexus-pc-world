@@ -5,5 +5,6 @@ const websiteSettingsController = require('../controllers/websiteSettingsControl
 
 router.get('/website/settings', websiteSettingsController.getPublicWebsiteSettings);
 router.get('/promotions/:filename', websiteSettingsController.downloadPromotionImage);
+router.get('/team/:filename', websiteSettingsController.downloadTeamMemberImage);
 
 module.exports = router;

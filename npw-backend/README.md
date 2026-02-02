@@ -20,6 +20,7 @@ Create a `.env` file in the root directory:
 
 ```
 MONGODB_URI=mongodb://localhost:27017/npw
+JWT_SECRET=change_me_to_a_long_random_string
 PORT=5000
 NODE_ENV=development
 ```

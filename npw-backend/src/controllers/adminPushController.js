@@ -1,5 +1,5 @@
 const PushSubscription = require('../models/PushSubscription');
-const { ensureWebPushConfigured } = require('../utils/pushNotifications');
+const { ensureWebPushConfigured } = require('../utils/notifications');
 
 const getVapidPublicKey = async (_req, res) => {
   const publicKey = process.env.VAPID_PUBLIC_KEY;

@@ -24,7 +24,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<User>;
-  signup: (name: string, email: string, password: string) => Promise<User>;
+  signup: (name: string, email: string, password: string) => Promise<{ email: string; username: string }>;
   logout: () => void;
    updateProfile: (newName: string) => void;
   isLoading: boolean;
@@ -92,18 +92,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const signup = async (name: string, email: string, password: string): Promise<User> => {
+  const signup = async (name: string, email: string, password: string): Promise<{ email: string; username: string }> => {
     setIsLoading(true);
     try {
-      // Server sets httpOnly cookie on signup; after signup fetch /me
-      await authService.signup(name, email, password);
-      const res: MeResponse = await authService.me();
-      const backendUser = res.user;
-      const appUser: User = { id: backendUser.id, name: backendUser.username, email: backendUser.email, role: backendUser.role };
-      localStorage.setItem('nexusUser', JSON.stringify(appUser));
-      setUser(appUser);
-      setAdminMode(false);
-      return appUser;
+      // Signup now returns email and username for OTP verification (no auto-login)
+      const response = await authService.signup(name, email, password);
+      return { email: response.email, username: response.username };
     } catch (err) {
       console.error('Signup error', err);
       throw err;

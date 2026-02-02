@@ -6,7 +6,8 @@ const allowedPaymentStatuses = new Set([
   'awaiting_receipt',
   'awaiting_confirmation',
   'paid',
-  'failed'
+  'failed',
+  'paid'
 ]);
 
 const getAllOrders = async (_req, res) => {

@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { websiteSettingsService, type PublicTeamMember } from '../services/websiteSettingsService';
+import { TEAM_MEMBERS } from '../constants';
+import { toAbsoluteApiUrl } from '../utils/toAbsoluteApiUrl';
 
 const ValueCard: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
     <div className="bg-nexus-dark p-6 rounded-lg border border-nexus-purple/30 text-center transform hover:-translate-y-2 transition-transform duration-300 h-full">
@@ -19,6 +22,45 @@ const TeamMemberCard: React.FC<{ imageUrl: string; name: string; title: string; 
 
 
 const About: React.FC = () => {
+    const [team, setTeam] = useState<PublicTeamMember[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        let isCancelled = false;
+        async function fetchTeam() {
+            try {
+                const res = await websiteSettingsService.getPublic();
+                if (isCancelled) return;
+                const members = res?.settings?.teamMembers || [];
+                if (members.length > 0) {
+                    setTeam(members.map(m => ({ ...m, imageUrl: toAbsoluteApiUrl(m.imageUrl) })));
+                } else {
+                    // Fallback to constants if empty
+                    setTeam(TEAM_MEMBERS.map(m => ({
+                        ...m,
+                        visible: true,
+                        sortOrder: 0,
+                        imageUrl: m.imageUrl
+                    })));
+                }
+            } catch (err) {
+                console.error('Failed to fetch team members', err);
+                if (!isCancelled) {
+                    setTeam(TEAM_MEMBERS.map(m => ({
+                        ...m,
+                        visible: true,
+                        sortOrder: 0,
+                        imageUrl: m.imageUrl
+                    })));
+                }
+            } finally {
+                if (!isCancelled) setIsLoading(false);
+            }
+        }
+        fetchTeam();
+        return () => { isCancelled = true; };
+    }, []);
+
     return (
         <div className="py-20">
             {/* Main Section */}
@@ -26,7 +68,7 @@ const About: React.FC = () => {
                 <div className="flex flex-col md:flex-row items-center gap-12">
                     <div className="md:w-1/2">
                         <div className="p-1 rounded-lg animate-glow">
-                           <img src="https://images.pexels.com/photos/777001/pexels-photo-777001.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Nexus Gaming Workspace" className="rounded-lg shadow-2xl" />
+                            <img src="https://images.pexels.com/photos/777001/pexels-photo-777001.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Nexus Gaming Workspace" className="rounded-lg shadow-2xl" />
                         </div>
                     </div>
                     <div className="md:w-1/2 text-center md:text-left">
@@ -40,7 +82,7 @@ const About: React.FC = () => {
                     </div>
                 </div>
             </section>
-            
+
             {/* Core Values Section */}
             <section className="container mx-auto px-6">
                 <div className="text-center mb-12">
@@ -48,19 +90,19 @@ const About: React.FC = () => {
                     <p className="text-nexus-light mt-2">The principles that drive us forward.</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <ValueCard 
+                    <ValueCard
                         icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
                         title="Peak Performance"
                     >
                         We use only top-tier, stress-tested components to deliver uncompromising speed and power for an elite gaming experience.
                     </ValueCard>
-                    <ValueCard 
+                    <ValueCard
                         icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                         title="Meticulous Craftsmanship"
                     >
                         Every build is assembled with precision and an artist's touch, ensuring clean cable management and optimal airflow.
                     </ValueCard>
-                     <ValueCard 
+                    <ValueCard
                         icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
                         title="Gamer-Centric Support"
                     >
@@ -76,24 +118,19 @@ const About: React.FC = () => {
                     <p className="text-nexus-light mt-2">The experts behind your perfect build.</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <TeamMemberCard
-                        imageUrl="https://picsum.photos/seed/alex/200"
-                        name="Alex 'Forge' Johnson"
-                        title="Founder & Lead Builder"
-                        bio="With over 15 years of experience, Alex ensures every machine is a masterpiece of power and precision."
-                    />
-                    <TeamMemberCard
-                        imageUrl="https://picsum.photos/seed/maya/200"
-                        name="Maya 'Volt' Chen"
-                        title="Overclocking Specialist"
-                        bio="Maya pushes hardware to its absolute limits, squeezing out every drop of performance for our X-Treme series."
-                    />
-                    <TeamMemberCard
-                        imageUrl="https://picsum.photos/seed/ryan/200"
-                        name="Ryan 'Aether' Patel"
-                        title="Aesthetics & Design Lead"
-                        bio="Ryan is the artist behind our builds, mastering the flow of light and air to create systems that look as good as they run."
-                    />
+                    {isLoading ? (
+                        <div className="col-span-full text-center text-gray-400 py-10">Loading experts...</div>
+                    ) : (
+                        team.filter(m => m.visible !== false).map((m) => (
+                            <TeamMemberCard
+                                key={m.id}
+                                imageUrl={m.imageUrl}
+                                name={m.name}
+                                title={m.title}
+                                bio={m.bio}
+                            />
+                        ))
+                    )}
                 </div>
             </section>
         </div>

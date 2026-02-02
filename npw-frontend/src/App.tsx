@@ -20,6 +20,9 @@ import PaymentPage from './pages/PaymentPage';
 import WishlistPage from './pages/WishlistPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import VerifyOTPPage from './pages/VerifyOTPPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -90,6 +93,19 @@ const App: React.FC = () => {
                   <Route path="/payment" element={<PaymentPage navigateTo={navigateTo} />} />
                   <Route path="/login" element={<LoginPage navigateTo={navigateTo} />} />
                   <Route path="/signup" element={<SignupPage navigateTo={navigateTo} />} />
+                  <Route path="/verify-otp" element={
+                    (() => {
+                      const params = new URLSearchParams(location.search);
+                      return <VerifyOTPPage
+                        navigateTo={navigateTo}
+                        email={params.get('email') || undefined}
+                        username={params.get('username') || undefined}
+                      />;
+                    })()
+                  } />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage navigateTo={navigateTo} />} />
+                  <Route path="/reset-password/:token" element={<ResetPasswordPage navigateTo={navigateTo} />} />
+                  <Route path="/login/reset-password/:token" element={<ResetPasswordPage navigateTo={navigateTo} />} />
                   <Route path="/admin" element={<AdminDashboard navigateTo={navigateTo} />} />
                   <Route path="/admin/products" element={<AdminProducts navigateTo={navigateTo} />} />
                   <Route path="/admin/users" element={<AdminUsers />} />

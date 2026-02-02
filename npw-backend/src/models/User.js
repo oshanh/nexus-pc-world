@@ -83,7 +83,20 @@ const userSchema = new mongoose.Schema({
       bankTransferReceiptUploadedAt: { type: Date }
     },
     createdAt: Date
-  }]
+  }],
+  lastLoginAt: { 
+    type: Date,
+    default:Date.now 
+  },
+  isVerified: { 
+    type: Boolean, 
+    default: false 
+  },
+  resetPasswordToken: String,
+  resetPasswordExpiresAt: Date,
+  verificationToken: String,
+  verificationTokenExpiresAt: Date
+
 }, {
   timestamps: true
 });

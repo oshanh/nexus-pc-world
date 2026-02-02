@@ -4,6 +4,7 @@ import { useProducts } from '../contexts/ProductContext';
 import type { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import GamingButton from './GamingButton';
+import { websiteSettingsService } from '../services/websiteSettingsService';
 
 interface FeaturedProductsProps {
   onViewDetails: (product: Product) => void;
@@ -32,11 +33,39 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ onViewDetails, navi
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const { products } = useProducts();
     const { addToCart } = useCart();
-    const [isAdding, setIsAdding] = useState<number | null>(null);
+    const [isAdding, setIsAdding] = useState<string | null>(null);
+
+    const [featuredIds, setFeaturedIds] = useState<{ desktopProductId: string; laptopProductId: string }>({
+        desktopProductId: '',
+        laptopProductId: '',
+    });
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await websiteSettingsService.getPublic();
+                if (cancelled) return;
+                const fp = res?.settings?.featuredProducts;
+                if (!fp) return;
+                setFeaturedIds({
+                    desktopProductId: String(fp.desktopProductId || ''),
+                    laptopProductId: String(fp.laptopProductId || ''),
+                });
+            } catch {
+                // Ignore and use fallbacks
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     const featuredProducts: { [key in Category]?: Product } = {
-        Desktop: products.find(p => p.category === 'Desktop'),
-        Laptop: products.find(p => p.category === 'Laptop'),
+        Desktop: (featuredIds.desktopProductId
+            ? products.find(p => p.id === featuredIds.desktopProductId)
+            : undefined) || products.find(p => p.category === 'Desktop'),
+        Laptop: (featuredIds.laptopProductId
+            ? products.find(p => p.id === featuredIds.laptopProductId)
+            : undefined) || products.find(p => p.category === 'Laptop'),
     };
     
     const activeProduct = featuredProducts[activeCategory];
@@ -102,7 +131,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ onViewDetails, navi
                          {/* Image Carousel */}
                          {activeProduct.imageUrls.map((url, index) => (
                             <img
-                                key={index}
+                                key={url}
                                 src={url}
                                 alt={`${activeProduct.name} view ${index + 1}`}
                                 className={`absolute inset-4 w-[calc(100%-2rem)] h-[calc(100%-2rem)] rounded-lg object-contain transition-opacity duration-700 ease-in-out ${
@@ -116,9 +145,9 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ onViewDetails, navi
                          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-nexus-blue/50 rounded-br-lg transition-all duration-300 group-hover:w-12 group-hover:h-12"></div>
                          {/* Carousel Indicators */}
                         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-3 z-10">
-                            {activeProduct.imageUrls.map((_, index) => (
+                            {activeProduct.imageUrls.map((url, index) => (
                                 <button
-                                    key={index}
+                                    key={url}
                                     onClick={() => setCurrentImageIndex(index)}
                                     className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
                                         currentImageIndex === index ? 'bg-nexus-blue scale-125' : 'bg-gray-500/70 hover:bg-gray-400'

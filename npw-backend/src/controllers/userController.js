@@ -301,7 +301,7 @@ const updateWishlist = async (req, res) => {
   }
 };
 
-const { sendToAllAdminSubscriptions } = require('../utils/pushNotifications');
+const { sendToAllAdminSubscriptions } = require('../utils/notifications');
 
 // Orders
 const getOrders = async (req, res) => {
